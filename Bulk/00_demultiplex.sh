@@ -1,0 +1,77 @@
+#!/bin/bash
+
+#SBATCH --job-name=bcltofastq
+#SBATCH --nodes=1
+#SBATCH --partition=defq
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=36
+#SBATCH --mem=0G
+#SBATCH --mail-type=END,FAIL
+#SBATCH --output=slurm_%u_%x_%j.log
+
+#===============================================================================
+# Cellranger mkfastq is deprecated use bclconvert. Bclconvert is planned to replace bcl2fastq
+module load bcl2fastq/2.20
+
+RUNFOLDER=""
+SAMPLESHEET=""
+OUTPUTDIR=""
+
+mkdir -p "${OUTPUTDIR}"
+
+bcl2fastq \
+	--runfolder-dir "${RUNFOLDER}" \
+    --sample-sheet "${SAMPLESHEET}" \
+	--output-dir "${OUTPUTDIR}" \
+	--barcode-mismatches 2 \
+	--no-lane-splitting \
+	--loading-threads 4 \
+	--processing-threads 28 \
+	--writing-threads 4 \
+    --create-fastq-for-index-reads
+
+# the following code can be used to move index reads to a separate folder
+# cd ${OUTPUTDIR}
+# mkdir -p Index_reads/
+# mv *_I1_* Index_reads/
+
+#===============================================================================
+# or You could use cellranger mkfastq if demultiplexing 10x single cell data
+
+# module load cellranger/9.0.0
+# module load bcl2fastq/2.20
+
+# RUNFOLDER=
+# SAMPLESHEET=
+# OUTPUTDIR=
+
+# mkdir -p "${OUTPUTDIR}"
+
+# cellranger mkfastq \
+#     --run "${RUNFOLDER}" \
+#     --samplesheet "${SAMPLESHEET}" \
+#     --output-dir="${OUTPUTDIR}" \
+#     --barcode-mismatches 2 \
+#     --localcores=36 \
+#     --localmem=300
+
+#===============================================================================
+# or You could use spaceranger mkfastq as below if demultiplexing 10x spatial data
+
+# module load bcl2fastq/2.20
+# module load spaceranger/3.0.1
+
+# RUNFOLDER=
+# SAMPLESHEET=
+# OUTPUTDIR=
+
+# spaceranger mkfastq \
+#   --run="${RUNFOLDER}" \
+#   --simple-csv="${SAMPLESHEET}" \
+#   --output-dir="${OUTPUTDIR}" \
+#   --localcores=36 \
+#   --localmem=300 \
+#   --barcode-mismatches 2
+
+# can be added if needed 
+# # --id="PAD-28"
