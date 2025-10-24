@@ -14,25 +14,33 @@
 echo "Starting job at $(date '+%Y-%m-%d %H:%M:%S')"
 
 ## INPUTS AND OUTPUTS
-WORKING_DIR="/home/tmhaxs421/brannanlab/tmhaxs421/riboSTAMP_mouse" # Remove
+WORKING_DIR="" # Remove
 INPUT_BAM_FILE_DIR="$WORKING_DIR/results/star_output" # Remove bam files in end and add /<path_to_bam_files>
 
 OUTPUT_STRANDEDNESS_DIR="$WORKING_DIR/qc/strandedness"
 OUTPUT_STATS_DIR="$WORKING_DIR/qc/bam_stats"
 OUTPUT_QC_DIR="$WORKING_DIR/qc"
 
-
 ## REFERENCES
-REFERENCE_PATH="" # adding the reference for alignment 
-BED_PATH="" # for annotation and reseqc strandedness
 GTF_PATH=""
+BED_PATH="" # for annotation and reseqc strandedness
+
 
 PREFIX=".Aligned.sortedByCoord.out.bam" # remember to add the dot to the prefix 
 # 1-Brain.Aligned.sortedByCoord.out.bam
 
+#==========================================================================================================================================
+# UNCOMMENT IF NEEDED
+# converting GTF to BED12 for RSEQC 
+# /path/to/ScriptsToolkit/NCBI_utilities/gtfToGenePred \
+#     -genePredExt $GTF_PATH \
+#     $GTF_PATH/../annotation.genePred
 
-MAPQ_THRESHOLD="5" # only Unique Aligners
+# /path/to/ScriptsToolkit/NCBI_utilities/genePredToBed \
+#     $GTF_PATH/../annotation.genePred \
+#     $GTF_PATH/../refgene.bed
 
+# BED_PATH="$GTF_PATH/../refgene.bed"
 # =========================================================================================================================================
 # PART 1: QC AND STRANDEDNESS
 # =========================================================================================================================================
@@ -69,14 +77,13 @@ for bam_file in "$INPUT_BAM_FILE_DIR"/*"$PREFIX"; do # Running GATK base quality
         --ALIGNED_READS_ONLY
 done
 
-
 #==========================================================================================================================================
-# utlities
-# # check strandedness of the data
-# # Convert GTF to genePred
-# /home/tmhaxs421/brannanlab/tmhaxs421/applications/ncbi_utilities/gtfToGenePred -genePredExt /home/tmhaxs421/brannanlab/VS_share/Genome_indexs/tdtmouse/gencode.vM37.tdTomato.annotation.gtf \
-#     /home/tmhaxs421/brannanlab/VS_share/Genome_indexs/tdtmouse/annotation.genePred
+# converting GTF to BED12 for RSEQC
 
-# # Convert to BED12
-# /home/tmhaxs421/brannanlab/tmhaxs421/applications/ncbi_utilities/genePredToBed /home/tmhaxs421/brannanlab/VS_share/Genome_indexs/tdtmouse/annotation.genePred \
-#     /home/tmhaxs421/brannanlab/VS_share/Genome_indexs/tdtmouse/refgene.bed
+/path/to/ScriptsToolkit/NCBI_utilities/gtfToGenePred \
+    -genePredExt $GTF_PATH \
+    $GTF_PATH/../annotation.genePred
+
+/path/to/ScriptsToolkit/NCBI_utilities/genePredToBed \
+    $GTF_PATH/../annotation.genePred \
+    $GTF_PATH/../refgene.bed
