@@ -78,12 +78,3 @@ for bam_file in "$INPUT_BAM_FILE_DIR"/*"$PREFIX"; do # Running GATK base quality
 done
 
 #==========================================================================================================================================
-# converting GTF to BED12 for RSEQC
-
-/path/to/ScriptsToolkit/NCBI_utilities/gtfToGenePred \
-    -genePredExt $GTF_PATH \
-    $GTF_PATH/../annotation.genePred
-
-/path/to/ScriptsToolkit/NCBI_utilities/genePredToBed \
-    $GTF_PATH/../annotation.genePred \
-    $GTF_PATH/../refgene.bed

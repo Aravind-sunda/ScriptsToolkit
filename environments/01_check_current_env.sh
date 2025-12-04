@@ -1,0 +1,1 @@
+mamba env export -n bioinformatics --no-builds > bioinfo_current.yml

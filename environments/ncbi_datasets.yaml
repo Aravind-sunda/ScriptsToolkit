@@ -1,0 +1,8 @@
+name: ncbi_datasets
+channels:
+  - conda-forge
+dependencies:
+  - ca-certificates=2024.8.30
+  - ncbi-datasets-cli=16.31.0
+
+prefix: "/condo/brannanlab/tmhaxs421/.conda/envs/ncbi_datasets"

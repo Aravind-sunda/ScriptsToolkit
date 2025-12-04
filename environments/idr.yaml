@@ -1,0 +1,62 @@
+name: idr
+channels:
+  - bioconda
+  - pkgs/main
+dependencies:
+  - _libgcc_mutex=0.1
+  - _openmp_mutex=5.1
+  - blas=1.0
+  - ca-certificates=2025.2.25
+  - certifi=2020.6.20
+  - cycler=0.10.0
+  - dbus=1.13.18
+  - expat=2.7.1
+  - fontconfig=2.14.1
+  - freetype=2.13.3
+  - glib=2.69.1
+  - gst-plugins-base=1.14.1
+  - gstreamer=1.14.1
+  - icu=58.2
+  - idr=2.0.2
+  - jpeg=9e
+  - kiwisolver=1.0.1
+  - libffi=3.3
+  - libgcc-ng=11.2.0
+  - libgfortran-ng=7.5.0
+  - libgfortran4=7.5.0
+  - libgomp=11.2.0
+  - libopenblas=0.3.18
+  - libpng=1.6.39
+  - libstdcxx-ng=11.2.0
+  - libuuid=1.41.5
+  - libxcb=1.17.0
+  - libxml2=2.9.14
+  - matplotlib=3.0.0
+  - ncurses=6.4
+  - numpy=1.15.2
+  - numpy-base=1.15.2
+  - openssl=1.1.1w
+  - pcre=8.45
+  - pip=10.0.1
+  - pthread-stubs=0.3
+  - pyparsing=2.4.7
+  - pyqt=5.9.2
+  - python=3.5.6
+  - python-dateutil=2.8.2
+  - pytz=2021.3
+  - qt=5.9.7
+  - readline=8.2
+  - scipy=1.1.0
+  - setuptools=40.2.0
+  - sip=4.19.8
+  - six=1.16.0
+  - sqlite=3.45.3
+  - tk=8.6.14
+  - tornado=5.1.1
+  - wheel=0.37.1
+  - xorg-libxau=1.0.12
+  - xorg-libxdmcp=1.1.5
+  - xz=5.6.4
+  - zlib=1.2.13
+
+prefix: "/condo/brannanlab/tmhaxs421/.conda/envs/idr"

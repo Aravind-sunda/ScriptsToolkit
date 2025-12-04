@@ -1,0 +1,17 @@
+name: minimap2
+channels:
+  - bioconda
+  - conda-forge
+  - pkgs/main
+dependencies:
+  - _libgcc_mutex=0.1
+  - _openmp_mutex=4.5
+  - k8=0.2.5
+  - libgcc-ng=14.1.0
+  - libstdcxx-ng=11.2.0
+  - libzlib=1.2.13
+  - llvm-openmp=14.0.6
+  - minimap2=2.28
+  - zlib=1.2.13
+
+prefix: "/condo/brannanlab/tmhaxs421/.conda/envs/minimap2"
