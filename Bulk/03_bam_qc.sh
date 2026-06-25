@@ -49,7 +49,7 @@ module load mamba
 mamba init bash
 mamba activate
 mamba activate bioinformatics
-
+BED_PATH="/home/tmhaxs421/brannanlab/tmhaxs421/reference/cellranger_reference/refdata-gex-GRCh38-2024-A/d_genes_unpacked/genes.bed"
 mkdir -p "$OUTPUT_STRANDEDNESS_DIR"
 for bam_file in "$INPUT_BAM_FILE_DIR"/*"$PREFIX"; do # running RSEQC to determine strandedness
     sample=$(basename "$bam_file" "$PREFIX")

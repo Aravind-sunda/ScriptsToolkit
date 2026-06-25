@@ -37,7 +37,7 @@ bcl2fastq \
 
 #===============================================================================
 # or You could use cellranger mkfastq if demultiplexing 10x single cell data
-
+# cellranger mkfastq will be deprecated in favor of bclconvert but can be used if needed
 # module load cellranger/9.0.0
 # module load bcl2fastq/2.20
 

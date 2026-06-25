@@ -1,0 +1,364 @@
+---
+title: "Trial_edgeR_script"
+author: "Aravind Sundaravadivelu"
+date: "2026-02-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(edgeR)
+library(data.table)
+library(dplyr)
+library(gplots)
+require(DESeq)
+library(ggplot2)
+library(tidyverse)
+```
+
+```{r}
+Genewisecounts<- fread("/home/tmhaxs421/brannanlab/VS_share/VS_AS_folder/Clip_analysis/analysis/MassSpec_data/IgGoverShortTertIR.csv")
+dim(Genewisecounts)
+```
+
+```{r}
+dup_tbl <- Genewisecounts %>%
+  count(Genes, sort = TRUE) %>%
+  filter(n > 1)
+
+genes_removed <- dup_tbl$Genes
+
+cat(
+  sprintf(
+    "The following %d genes that are repeated are removed: (%s).\n",
+    length(genes_removed),
+    paste(genes_removed, collapse = ", ")
+  )
+)
+
+Genewisecounts_dedup<-Genewisecounts %>% distinct(Genes, .keep_all = TRUE)
+Genewisecounts_dedup
+```
+
+
+```{r}
+gene_id <- Genewisecounts_dedup[[1]]
+counts  <- as.matrix(Genewisecounts_dedup[, -1, with = FALSE])
+rownames(counts) <- gene_id
+
+# first 2 columns = control, last 2 = experiment
+group <- factor(c(rep("control", 2), rep("experiment", 2)),
+                levels = c("control", "experiment"))
+
+dge <- DGEList(counts = counts, group = group)
+
+# ---- split gene + counts ----
+gene_id <- df[[1]]  # first column is gene
+counts  <- as.matrix(df[, -1, with = FALSE])
+rownames(counts) <- gene_id
+
+# make sure counts are numeric
+storage.mode(counts) <- "numeric"
+
+# ---- group labels: first 2 = control, last 2 = experiment ----
+group <- factor(c(rep("control", 2), rep("experiment", 2)),
+                levels = c("control", "experiment"))
+
+stopifnot(ncol(counts) == length(group))  # sanity check
+
+# ---- edgeR object ----
+y <- DGEList(counts = counts, group = group)
+
+# ---- filter low signal ----
+# keep <- filterByExpr(y, group = group)
+# y <- y[keep, , keep.lib.sizes = FALSE]
+
+# ---- normalize ----
+y <- calcNormFactors(y)
+
+# ---- design matrix ----
+design <- model.matrix(~ group)  # includes intercept (control baseline)
+# coefficient of interest will be: groupexperiment
+
+# ---- estimate dispersion ----
+y <- estimateDisp(y, design)
+
+# ---- fit + test (robust with small n) ----
+fit <- glmQLFit(y, design, robust = TRUE)
+res <- glmQLFTest(fit, coef = "groupexperiment")  # experiment vs control
+
+# ---- results table ----
+tab <- topTags(res, n = Inf)$table
+tab$Genes <- rownames(tab)
+
+# # save
+# fwrite(as.data.table(tab), file = "edgeR_experiment_vs_control.tsv", sep = "\t")
+# 
+# # look at top hits
+# head(tab, 20)
+```
+
+```{r}
+
+cols <- names(Genewisecounts_dedup)[2:5]
+
+long <- df[, ..cols] |>
+  pivot_longer(cols = everything(), names_to = "sample", values_to = "value") |>
+  transform(value = as.numeric(value))
+
+ggplot(long, aes(x = value)) +
+  geom_histogram(bins = 50) +
+  facet_wrap(~ sample, scales = "free_x") +
+  theme_bw()
+```
+
+```{r}
+
+genes <- Genewisecounts_dedup[[1]]
+sample_cols <- names(Genewisecounts_dedup)[2:5]          # first 2 control, last 2 experiment
+X <- as.matrix(Genewisecounts_dedup[, ..sample_cols])
+X <- apply(X, 2, as.numeric)
+rownames(X) <- genes
+
+# If values are NOT already log2, log2-transform.
+# Heuristic: if values are large (e.g. > 100) it's probably intensity, so log2 it.
+if (max(X, na.rm=TRUE) > 100) {
+  X <- log2(X + 1)
+}
+
+group <- factor(c(rep("control", 2), rep("experiment", 2)),
+                levels=c("control","experiment"))
+
+design <- model.matrix(~0 + group)
+colnames(design) <- levels(group)
+
+fit <- lmFit(X, design)
+contr <- makeContrasts(experiment_vs_control = experiment - control, levels=design)
+fit2 <- contrasts.fit(fit, contr)
+fit2 <- eBayes(fit2)
+
+res1 <- topTable(fit2, coef="experiment_vs_control", number=Inf, sort.by="P")
+# res$Genes <- rownames(res)
+# 
+# res[1:20, c("Genes","logFC","P.Value","adj.P.Val")]
+
+res1
+
+```
+
+
+```{r}
+# 1) gene/protein IDs (first col) + data matrix (cols 2:5)
+genes <- Genewisecounts[[1]]
+X <- as.matrix(Genewisecounts[, 2:5, with = FALSE])
+X <- apply(X, 2, as.numeric)
+rownames(X) <- genes
+X_raw <- X
+X_norm <- sweep(X_raw, 2, apply(X_raw, 2, median, na.rm = TRUE), FUN = "-")
+
+par(mfrow = c(2,2))
+
+# Medians (after should be ~0 by definition)
+barplot(apply(X_raw,  2, median, na.rm=TRUE), las=2, main="Median (raw)", ylab="median")
+barplot(apply(X_norm, 2, median, na.rm=TRUE), las=2, main="Median (median-centered)", ylab="median")
+
+# Spread summaries (these actually show a change if present)
+barplot(apply(X_raw,  2, IQR, na.rm=TRUE), las=2, main="IQR (raw)", ylab="IQR")
+barplot(apply(X_norm, 2, IQR, na.rm=TRUE), las=2, main="IQR (median-centered)", ylab="IQR")
+
+par(mfrow = c(1,1))
+
+par(mfrow = c(1,2))
+boxplot(X_raw,  las=2, main="Before", ylab="value")
+boxplot(X_norm, las=2, main="After median-centering", ylab="value")
+par(mfrow = c(1,1))
+
+
+library(limma)
+par(mfrow = c(1,2))
+plotDensities(X_raw,  main="Densities: before")
+plotDensities(X_norm, main="Densities: after median-centering")
+par(mfrow = c(1,1))
+
+
+# 2) OPTIONAL: median-center each sample so the median log2FC is 0
+# (recommended if you believe it's "non-normalized")
+X <- sweep(X, 2, apply(X, 2, median, na.rm = TRUE), FUN = "-")
+
+# Alternative mild normalization via limma (single-channel style):
+# X <- normalizeBetweenArrays(X, method = "scale")  # uses limma normalization methods :contentReference[oaicite:2]{index=2}
+
+# 3) design: first 2 columns control, last 2 experiment
+group <- factor(c("control","control","experiment","experiment"),
+                levels = c("control","experiment"))
+
+design <- model.matrix(~0 + group)
+colnames(design) <- levels(group)
+
+# 4) fit + contrast (experiment - control)
+fit <- lmFit(X, design)
+contr <- makeContrasts(experiment_vs_control = experiment - control, levels = design)
+fit2 <- contrasts.fit(fit, contr)
+
+# 5) moderated stats
+fit2 <- eBayes(fit2, robust = TRUE)
+
+# 6) results
+res2 <- topTable(fit2, coef = "experiment_vs_control", number = Inf, sort.by = "P")
+# res$Genes <- rownames(res)
+# 
+# res[1:20, c("Genes","logFC","P.Value","adj.P.Val")]
+res2
+
+```
+
+```{r}
+# library(data.table)
+# library(dplyr)
+# library(ggplot2)
+# library(ggpubr)
+# 
+# # Correlation plot
+# res1_sub <- res1 %>% 
+#   select(logFC) %>% 
+#   rownames_to_column(var = "ID")
+# 
+# res2_sub <-  res2 %>% 
+#   select(logFC) %>% 
+#   rownames_to_column(var = "ID")
+# 
+# res <- inner_join(res1_sub, res2_sub, by = "ID") 
+# 
+# print(cor.test(res$logFC.x, res$logFC.y, method = "pearson"))
+# # print(cor.test(m$log2fc_1, m$log2fc_2, method = "spearman"))
+# 
+# # --- dot plot + regression line + correlation annotation ---
+# ggplot(res, aes(x = logFC.x, y = logFC.y)) +
+#   geom_point(alpha = 0.4, size = 1) +
+#   geom_smooth(method = "lm", se = FALSE) +                 # :contentReference[oaicite:1]{index=1}install.packages("ggpubr")
+#   stat_cor(method = "pearson") +                           # :contentReference[oaicite:2]{index=2}
+#   theme_bw() +
+#   labs(x = "log2FC (table 1)", y = "log2FC (table 2)",
+#        title = sprintf("Common genes: %d", nrow(res)))
+```
+
+```{r}
+# # Correlation plot
+# res1_sub <- res1 %>% 
+#   select(adj.P.Val) %>% 
+#   rownames_to_column(var = "ID")
+# 
+# res2_sub <-  res2 %>% 
+#   select(adj.P.Val) %>% 
+#   rownames_to_column(var = "ID")
+# 
+# res <- inner_join(res1_sub, res2_sub, by = "ID") 
+# 
+# print(cor.test(res$adj.P.Val.x, res$adj.P.Val.y, method = "pearson"))
+# # print(cor.test(m$log2fc_1, m$log2fc_2, method = "spearman"))
+# 
+# # --- dot plot + regression line + correlation annotation ---
+# ggplot(res, aes(x = adj.P.Val.x, y = adj.P.Val.y)) +
+#   geom_point(alpha = 0.4, size = 1) +
+#   geom_smooth(method = "lm", se = FALSE) +                 # :contentReference[oaicite:1]{index=1}install.packages("ggpubr")
+#   stat_cor(method = "pearson") +                           # :contentReference[oaicite:2]{index=2}
+#   theme_bw() +
+#   labs(x = "log2FC (table 1)", y = "log2FC (table 2)",
+#        title = sprintf("Common genes: %d", nrow(res)))
+```
+
+```{r}
+res_volcano <- res1 %>% 
+  filter(logFC >= 1 ) %>% 
+  filter(P.Value <= 0.05)
+
+res1 <- res1 %>%
+  mutate(
+    Genes = if ("Genes" %in% names(.)) Genes else rownames(.),
+    neglog10P = -log10(P.Value),
+    status = case_when(
+      adj.P.Val <= 0.05 & logFC >=  1 ~ "Up",
+      adj.P.Val <= 0.05 & logFC <= -1 ~ "Down",
+      TRUE ~ "NS"
+    )
+  )
+
+# label a few top hits (optional)
+top_labs <- res1 %>%
+  filter(status != "NS") %>%
+  arrange(adj.P.Val) %>%
+  slice_head(n = 20)
+
+ggplot(res1, aes(x = logFC, y = neglog10P, color = status)) +
+  geom_point(alpha = 0.6, size = 1.3) +
+  geom_vline(xintercept = c(-1, 1), linetype = "dashed") +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed") +
+  ggrepel::geom_text_repel(
+    data = top_labs,
+    aes(label = Genes),
+    size = 3,
+    max.overlaps = Inf
+  ) +
+  theme_bw() +
+  labs(x = "log2 Fold Change (logFC)", y = "-log10(P-value)", color = "")
+
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(ggrepel)
+
+res1 <- res1 %>%
+  mutate(
+    Genes = if ("Genes" %in% names(.)) Genes else rownames(.),
+    # avoid Inf if adj.P.Val is 0
+    neglog10FDR = -log10(adj.P.Val),
+    status = case_when(
+      adj.P.Val <= 0.05 & logFC >=  1 ~ "Up",
+      adj.P.Val <= 0.05 & logFC <= -1 ~ "Down",
+      TRUE ~ "NS"
+    )
+  )
+
+top_labs <- res1 %>%
+  filter(status != "NS") %>%
+  arrange(adj.P.Val) %>%
+  slice_head(n = 20)
+
+ggplot(res1, aes(x = logFC, y = neglog10FDR, color = status)) +
+  geom_point(alpha = 0.6, size = 1.3) +
+  geom_vline(xintercept = c(-1, 1), linetype = "dashed") +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed") +
+  ggrepel::geom_text_repel(
+    data = top_labs,
+    aes(label = Genes),
+    size = 3,
+    max.overlaps = Inf
+  ) +
+  theme_bw() +
+  labs(
+    x = "log2 Fold Change (logFC)",
+    y = "-log10(FDR)  (i.e., -log10(adj.P.Val))",
+    color = ""
+  )
+
+```
+
+```{r}
+# BiocManager::install("EnhancedVolcano")  # if needed
+library(EnhancedVolcano)
+
+res2$Genes <- if ("Genes" %in% names(res1)) res1$Genes else rownames(res1)
+
+EnhancedVolcano(
+  res2,
+  lab = res2$Genes,
+  x = "logFC",
+  y = "P.Value",        # or "adj.P.Val" # or "P.Value"
+  FCcutoff = 1,
+  pCutoff = 0.05
+)
+
+```
+

@@ -1,0 +1,42 @@
+Source: https://github.com/Xinglab/rmats-turbo
+==============================
+# Columns common to all events
+==============================
+ID: rMATS event id
+GeneID: Gene id
+geneSymbol: Gene name
+chr: Chromosome
+strand: Strand of the gene
+IJC_SAMPLE_1: Inclusion counts for sample 1. Replicates are comma separated
+SJC_SAMPLE_1: Skipping counts for sample 1. Replicates are comma separated
+IJC_SAMPLE_2: Inclusion counts for sample 2. Replicates are comma separated
+SJC_SAMPLE_2: Skipping counts for sample 2. Replicates are comma separated
+IncFormLen: Length of inclusion form, used for normalization
+SkipFormLen: Length of skipping form, used for normalization
+PValue: Significance of splicing difference between the two sample groups. (Only available if the statistical model is on)
+FDR: False Discovery Rate calculated from p-value. (Only available if statistical model is on)
+IncLevel1: Inclusion level for sample 1. Replicates are comma separated. Calculated from normalized counts
+IncLevel2: Inclusion level for sample 2. Replicates are comma separated. Calculated from normalized counts
+IncLevelDifference: average(IncLevel1) - average(IncLevel2)
+
+========================================================
+# Event specific columns (event coordinates and counts):
+========================================================
+SE: exonStart_0base exonEnd upstreamES upstreamEE downstreamES downstreamEE upstream_to_target_count target_to_downstream_count target_count upstream_to_downstream_count
+The inclusion form includes the target exon (exonStart_0base, exonEnd)
+
+MXE: 1stExonStart_0base 1stExonEnd 2ndExonStart_0base 2ndExonEnd upstreamES upstreamEE downstreamES downstreamEE upstream_to_first_count first_to_downstream_count first_count upstream_to_second_count second_to_downstream_count second_count
+If the strand is +, then the inclusion form includes the 1st exon (1stExonStart_0base, 1stExonEnd) and skips the 2nd exon
+If the strand is -, then the inclusion form includes the 2nd exon (2ndExonStart_0base, 2ndExonEnd) and skips the 1st exon
+
+A3SS, A5SS: longExonStart_0base longExonEnd shortES shortEE flankingES flankingEE across_short_boundary_count long_to_flanking_count exclusive_to_long_count short_to_flanking_count
+The inclusion form includes the long exon (longExonStart_0base, longExonEnd) instead of the short exon (shortES shortEE)
+
+RI: riExonStart_0base riExonEnd upstreamES upstreamEE downstreamES downstreamEE upstream_to_intron_count intron_to_downstream_count intron_count upstream_to_downstream_count
+The inclusion form includes (retains) the intron (upstreamEE, downstreamES)
+
+========================================================
+Columns Added while filtering
+========================================================
+readType: There are enough reads that span junctions that support this event
+eventType: Identifier for the splicing event readType

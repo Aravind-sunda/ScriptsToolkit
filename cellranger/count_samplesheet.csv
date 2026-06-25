@@ -1,0 +1,3 @@
+id,sample,fastqs
+Sample1,Sample1,/path/to/fastqs/sample1
+Sample2,Sample2,/path/to/fastqs/sample2

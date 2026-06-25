@@ -1,0 +1,52 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+%labels
+    Author      Aravind Sundaravadivelu
+    Description Singularity container for metaPlotR metagene plot pipeline
+    Version     1.0
+    Source      https://github.com/olarerin/metaPlotR
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+
+    apt-get update && apt-get install -y \
+        perl \
+        wget \
+        git \
+        bedtools \
+        r-base \
+        r-base-dev \
+        libcurl4-openssl-dev \
+        libssl-dev \
+        libxml2-dev \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Install required R packages
+    Rscript -e "install.packages(c('ggplot2', 'scales'), repos='https://cloud.r-project.org', dependencies=TRUE)"
+
+    # Clone metaPlotR into /opt/metaplotr
+    git clone https://github.com/olarerin/metaPlotR /opt/metaplotr
+    chmod +x /opt/metaplotr/*.pl
+    find /opt/metaplotr -name "*.R" -exec chmod +x {} \;
+
+%environment
+    export PATH=/opt/metaplotr:$PATH
+    export LC_ALL=C
+
+%help
+    metaPlotR container — runs the full metagene plot pipeline.
+
+    Pre-build genome annotations (run once per genome):
+        singularity exec metaplotr.sif bash /opt/metaplotr/build_annotation.sh <genome> <refGene.txt> <outdir>
+
+    Run the pipeline (via 07_metaplotr.sh):
+        07_metaplotr.sh handles all steps; mount input/output directories as needed.
+
+    Manual step-by-step:
+        1. sort -k1,1 -k2,2n input.bed > sorted.bed
+        2. singularity exec metaplotr.sif perl /opt/metaplotr/make_annot_bed.pl --genome <refGene.txt> > annot.bed
+        3. singularity exec metaplotr.sif perl /opt/metaplotr/size_of_cds_utrs.pl --genome <refGene.txt> > sizes.txt
+        4. singularity exec metaplotr.sif perl /opt/metaplotr/annotate_bed_file.pl --bed sorted.bed --bed2 annot.bed > annotated.bed
+        5. singularity exec metaplotr.sif perl /opt/metaplotr/rel_and_abs_dist_calc.pl --bed annotated.bed --regions sizes.txt > distances.txt
+        6. singularity exec metaplotr.sif Rscript /opt/metaplotr/visualize_metagene.R distances.txt <output_dir>
