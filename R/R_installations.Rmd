@@ -1,0 +1,77 @@
+---
+title: "R_installations"
+author: "Aravind Sundaravadivelu"
+date: "2026-07-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# SEURAT subfunctions
+```{r}
+# used to compare different integration methods
+# CellMixS (Bioconductor)
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+BiocManager::install("CellMixS")
+```
+
+```{r}
+# LISI
+# LISI (GitHub only, not on CRAN)
+# if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
+# remotes::install_github("immunogenomics/LISI")
+# installation fails due to 
+# LISI's src/Makevars hardcodes CXX_STD = CXX11 (the package hasn't been touched since ~2019, when C++11 was still fine). But the RcppArmadillo version already on your system now requires C++14 — recent Armadillo versions use auto return-type deduction and constexpr features that don't exist in C++11, which is exactly what the errors ('accu' function uses 'auto' type specifier without trailing return type, deduced return type only available with -std=c++14) are complaining about. Rcpp/RcppArmadillo evolved past what LISI's build config expects; it's a compatibility gap in an unmaintained package, not something you did wrong.
+
+
+# (https://github.com/immunogenomics/LISI/releases/tag/v1.0) # check for more recent versions
+tar_path <- "/condo/brannanlab/VS_share/VS_AS_folder/PDXs_V3/analysis/LISI-1.0.tar.gz"
+
+extract_dir <- tempfile()
+dir.create(extract_dir)
+untar(tar_path, exdir = extract_dir)
+
+pkg_dir <- list.dirs(extract_dir, recursive = FALSE)[1]
+cat("Extracted package dir:", pkg_dir, "\n")
+
+makevars_path <- file.path(pkg_dir, "src", "Makevars")
+lines <- readLines(makevars_path)
+lines <- gsub("CXX_STD = CXX11", "CXX_STD = CXX14", lines)
+writeLines(lines, makevars_path)
+
+# clear the stale lock from the earlier interrupted install, just in case
+# unlink("/home/tmhaxs421/R/x86_64-redhat-linux-gnu-library/4.5/00LOCK-Rcpp", recursive = TRUE)
+
+if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
+remotes::install_local(pkg_dir, force = TRUE)
+```
+
+```{r}
+# FASTMNN required packages
+
+# Not installed in this environment (SeuratWrappers, batchelor). Run this
+# chunk manually if you want FastMNN as a 6th integration method, then set
+# run_fastmnn <- TRUE below and re-knit.
+
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+BiocManager::install("batchelor")
+if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
+remotes::install_github("satijalab/seurat-wrappers")
+```
+
+```{r}
+# library(celldex)
+# BiocManager::install("celldex")
+```
+
+```{r}
+# celldex references download via ExperimentHub on first use. If the compute
+# node has no internet access, run this chunk (and the reference-fetching
+# chunk below) on a login node once to populate the local cache
+# (~/.cache/R/ExperimentHub by default) - subsequent runs will reuse it.
+
+# BiocManager::install(c("SingleR"))
+# BiocManager::install("scrapper")
+```
