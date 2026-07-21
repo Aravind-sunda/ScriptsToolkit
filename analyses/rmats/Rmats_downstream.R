@@ -95,7 +95,8 @@ max_psi_from_row <- function(row) {
 filtering <- function(table){
   table_filtered <- table %>% 
     filter(FDR <= 0.05) %>% 
-    filter(IncLevelDifference <= 0) %>% 
+    # filter(IncLevelDifference <= 0) %>% 
+    filter(FDR <= 0.05, abs(IncLevelDifference) >= 0.1)
     filter(SAMPLE_1_COUNTS > 50 & SAMPLE_2_COUNTS > 50) %>% 
     arrange(desc(IncLevelDifference))
   
@@ -120,8 +121,11 @@ for (event in splicing_events) {
   
 }
 
-output_unfiltered_result <- do.call(rbind, output_unfiltered)
-output_filtered_result <- do.call(rbind, output_filtered)
+# output_unfiltered_result <- do.call(rbind, output_unfiltered)
+# output_filtered_result <- do.call(rbind, output_filtered)
+
+output_unfiltered_result <- data.table::rbindlist(output_unfiltered, fill = TRUE)
+output_filtered_result   <- data.table::rbindlist(output_filtered,   fill = TRUE)
 
 output_unfiltered_path <- file.path(output_dir,paste0(comparison,"_table_allevents.csv"))
 output_filtered_path <- file.path(output_dir,paste0(comparison,"_filtered_table_allevents.csv"))
