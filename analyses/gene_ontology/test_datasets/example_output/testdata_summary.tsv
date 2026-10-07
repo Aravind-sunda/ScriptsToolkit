@@ -1,0 +1,13 @@
+List	Ontology	GenesIn	GenesMapped	TermsTested	TermsSignif	TermsRepresent	MedianAnnotSize	MedianDepth	MedianFoldEnr
+splicing	BP	150	150	1168	45	14	121	8	4.83
+ribosome	BP	150	150	1168	24	9	151	6	3.45
+mixed	BP	150	150	1168	82	27	63	5.5	3.05
+broad_generic	BP	150	150	1168	268	70	44	5	2.84
+neg_random	BP	150	150	1168	0				
+neg_depleted	BP	150	150	1168	0				
+splicing	MF	150	150	181	7	1	25	4	4.86
+ribosome	MF	150	150	181	11	7	22	3	3.99
+mixed	MF	150	150	181	1		20	5	4.95
+broad_generic	MF	150	150	181	0				
+neg_random	MF	150	150	181	0				
+neg_depleted	MF	150	150	181	0				

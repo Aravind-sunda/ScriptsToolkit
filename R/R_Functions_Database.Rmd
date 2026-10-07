@@ -1,0 +1,59 @@
+---
+title: "R Functions Database"
+author: "Aravind Sundaravadivelu"
+date: "2026-09-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Metascape Gene List Function
+This writes a text file that can be read in metascape to generate gene list analyses.
+
+```{r}
+# Function
+
+# gene_lists: a named list, e.g. list(RNA_mediated_noIR = c("DKC1","NHP2",...), ...)
+# writes the "#Name / Genes" tab-separated format (comma-joined gene column),
+# with CRLF line endings, matching multiple_list_symbol.txt
+write_multi_gene_list <- function(gene_lists, file) {
+  header <- c(
+    "#Name\tGenes",
+    "# (1) All lines start with # are ignored;",
+    "# (2) Two columns: Name and Genes must be tab-seprated;",
+    "# (3) Gene identifiers are contatenated within the second column by space/comma/semicolon, space/comma/semicolon must not be part of the gene identifier."
+  )
+  body <- imap_chr(gene_lists, ~ paste0(.y, "\t", paste(.x, collapse = ",")))
+
+  con <- file(file, open = "wb")   # binary connection so sep is written exactly as given, no platform translation
+  writeLines(c(header, body), con, sep = "\r\n")
+  close(con)
+}
+
+# Usage (template: replace the <PLACEHOLDERS>)
+# each has to be a named vector list that can be passed to the write_multi_gene_list function
+# minimum is 2 lists; add more entries in the same format as needed
+gene_lists <- list(
+  <listname_1> = <vector_1>,
+  <listname_2> = <vector_2>
+)
+
+write_multi_gene_list(gene_lists, "<output_dir>/<output_name>.txt")
+
+```
+
+```{r}
+# Applications to plot images and image panels in R. Functions to come
+
+library(rtracklayer)
+library(plotgardener)
+library(gviz) # https://bioconductor.org/packages/release/bioc/html/Gviz.html
+library(trackplot) # https://github.com/PoisonAlien/
+library(millefy)# https://link.springer.com/article/10.1186/s12864-020-6542-z # comparing single cell and bulk data. Have to check if there are better options
+
+
+```
+
+

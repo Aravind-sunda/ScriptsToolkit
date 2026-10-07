@@ -1,0 +1,380 @@
+ID	Description	Cluster	BestPadj	Representative
+GO:0098813	nuclear chromosome segregation	1	7.68514569664255e-07	TRUE
+GO:0007059	chromosome segregation	1	3.44544025239791e-06	FALSE
+GO:0000819	sister chromatid segregation	1	8.68721327646183e-06	FALSE
+GO:0000070	mitotic sister chromatid segregation	1	9.38867562336754e-06	FALSE
+GO:0051276	chromosome organization	1	0.000325051169465055	FALSE
+GO:0000226	microtubule cytoskeleton organization	1	0.000389368363365112	FALSE
+GO:0007017	microtubule-based process	1	0.00183525005861019	FALSE
+GO:0051293	establishment of spindle localization	1	0.00235497577023469	FALSE
+GO:0051301	cell division	1	0.00235497577023469	FALSE
+GO:0051653	spindle localization	1	0.00235497577023469	FALSE
+GO:1902850	microtubule cytoskeleton organization involved in mitosis	1	0.00242927983706812	FALSE
+GO:0040001	establishment of mitotic spindle localization	1	0.00247036737374823	FALSE
+GO:0050000	chromosome localization	1	0.00490785797330992	FALSE
+GO:0090307	mitotic spindle assembly	1	0.00646420152443104	FALSE
+GO:0007052	mitotic spindle organization	1	0.00760870118872124	FALSE
+GO:0051225	spindle assembly	1	0.00760870118872124	FALSE
+GO:0051640	organelle localization	1	0.00878780448444591	FALSE
+GO:0007051	spindle organization	1	0.0180604701663691	FALSE
+GO:0030010	establishment of cell polarity	1	0.0180604701663691	FALSE
+GO:0051294	establishment of spindle orientation	1	0.0180604701663691	FALSE
+GO:0051310	metaphase chromosome alignment	1	0.0180604701663691	FALSE
+GO:0032880	regulation of protein localization	1	0.0209865164410875	FALSE
+GO:0051656	establishment of organelle localization	1	0.0209865164410875	FALSE
+GO:0051649	establishment of localization in cell	1	0.0281971301913481	FALSE
+GO:0007163	establishment or maintenance of cell polarity	1	0.0321006087435804	FALSE
+GO:0022607	cellular component assembly	1	0.0325283944370337	FALSE
+GO:0044772	mitotic cell cycle phase transition	2	0.000470546143624497	TRUE
+GO:0044770	cell cycle phase transition	2	0.00235497577023469	FALSE
+GO:0000082	G1/S transition of mitotic cell cycle	2	0.00427776263589754	FALSE
+GO:0044843	cell cycle G1/S phase transition	2	0.00670939905493755	FALSE
+GO:0045930	negative regulation of mitotic cell cycle	2	0.023472888731737	FALSE
+GO:0045786	negative regulation of cell cycle	2	0.0283184137956017	FALSE
+GO:1901990	regulation of mitotic cell cycle phase transition	2	0.0318166019004912	FALSE
+GO:0000154	rRNA modification	3	0.0162931537600666	TRUE
+GO:0042127	regulation of cell population proliferation	4	0.000243612907462669	TRUE
+GO:2000145	regulation of cell motility	4	0.000243612907462669	FALSE
+GO:0040011	locomotion	4	0.000245642705780668	FALSE
+GO:0048870	cell motility	4	0.000273140665067316	FALSE
+GO:0040012	regulation of locomotion	4	0.000280410547246891	FALSE
+GO:0000165	MAPK cascade	4	0.000298306068559829	FALSE
+GO:0016477	cell migration	4	0.00040710439856184	FALSE
+GO:0030334	regulation of cell migration	4	0.000434291510710704	FALSE
+GO:0043408	regulation of MAPK cascade	4	0.00104934980638242	FALSE
+GO:0030335	positive regulation of cell migration	4	0.00125375378695441	FALSE
+GO:0008283	cell population proliferation	4	0.00129950918817725	FALSE
+GO:0040017	positive regulation of locomotion	4	0.00168014667307405	FALSE
+GO:2000147	positive regulation of cell motility	4	0.00168014667307405	FALSE
+GO:0009719	response to endogenous stimulus	4	0.00271808605177392	FALSE
+GO:0071495	cellular response to endogenous stimulus	4	0.00558370203696207	FALSE
+GO:0070848	response to growth factor	4	0.00600913454621332	FALSE
+GO:0008285	negative regulation of cell population proliferation	4	0.00786970869485738	FALSE
+GO:0007167	enzyme-linked receptor protein signaling pathway	4	0.00889391944255282	FALSE
+GO:0006935	chemotaxis	4	0.00923821849035419	FALSE
+GO:0042330	taxis	4	0.00923821849035419	FALSE
+GO:0007169	cell surface receptor protein tyrosine kinase signaling pathway	4	0.0119903082642058	FALSE
+GO:0032103	positive regulation of response to external stimulus	4	0.0142863335452249	FALSE
+GO:0043410	positive regulation of MAPK cascade	4	0.0151665089390985	FALSE
+GO:0008284	positive regulation of cell population proliferation	4	0.0166717202476548	FALSE
+GO:0050679	positive regulation of epithelial cell proliferation	4	0.0219121049716764	FALSE
+GO:0071363	cellular response to growth factor stimulus	4	0.0234008109574823	FALSE
+GO:0050678	regulation of epithelial cell proliferation	4	0.0242413465575198	FALSE
+GO:0061448	connective tissue development	4	0.0293366675753454	FALSE
+GO:0043542	endothelial cell migration	4	0.0313015770311671	FALSE
+GO:0050920	regulation of chemotaxis	4	0.0388168305952178	FALSE
+GO:0050673	epithelial cell proliferation	4	0.0390729489967846	FALSE
+GO:0000245	spliceosomal complex assembly	5	5.25424891184802e-08	TRUE
+GO:0022618	protein-RNA complex assembly	5	3.88213729296157e-07	FALSE
+GO:0071826	protein-RNA complex organization	5	6.51398317829497e-07	FALSE
+GO:0006376	mRNA splice site recognition	5	9.26529881252785e-06	FALSE
+GO:0065003	protein-containing complex assembly	5	0.00301905931883645	FALSE
+GO:0043933	protein-containing complex organization	5	0.0156904610127765	FALSE
+GO:0000278	mitotic cell cycle	6	5.77863034581814e-12	TRUE
+GO:0022402	cell cycle process	6	5.77863034581814e-12	FALSE
+GO:1903047	mitotic cell cycle process	6	5.77863034581814e-12	FALSE
+GO:0007049	cell cycle	6	9.1007806096273e-11	FALSE
+GO:0140014	mitotic nuclear division	6	9.1007806096273e-11	FALSE
+GO:0000280	nuclear division	6	2.29261500485106e-10	FALSE
+GO:0048285	organelle fission	6	4.35045217712517e-10	FALSE
+GO:0051726	regulation of cell cycle	6	6.93925928482326e-06	FALSE
+GO:0010564	regulation of cell cycle process	6	2.79677711025375e-05	FALSE
+GO:0007346	regulation of mitotic cell cycle	6	0.00011009143584518	FALSE
+GO:0007088	regulation of mitotic nuclear division	6	0.00054248007134434	FALSE
+GO:0051783	regulation of nuclear division	6	0.000776951890072345	FALSE
+GO:0045840	positive regulation of mitotic nuclear division	6	0.00147988412867345	FALSE
+GO:0051785	positive regulation of nuclear division	6	0.00147988412867345	FALSE
+GO:0033043	regulation of organelle organization	6	0.00721930150578507	FALSE
+GO:0045787	positive regulation of cell cycle	6	0.00760870118872124	FALSE
+GO:0090068	positive regulation of cell cycle process	6	0.00878780448444591	FALSE
+GO:0010638	positive regulation of organelle organization	6	0.0410688634437747	FALSE
+GO:0000375	RNA splicing, via transesterification reactions	7	8.01577056755724e-47	TRUE
+GO:0000377	RNA splicing, via transesterification reactions with bulged adenosine as nucleophile	7	8.01577056755724e-47	FALSE
+GO:0000398	mRNA splicing, via spliceosome	7	8.01577056755724e-47	FALSE
+GO:0008380	RNA splicing	7	8.22033639860972e-46	FALSE
+GO:0006397	mRNA processing	7	2.32569694711106e-45	FALSE
+GO:0016071	mRNA metabolic process	7	3.38303634240866e-41	FALSE
+GO:0006396	RNA processing	7	5.09200090035148e-29	FALSE
+GO:0032774	RNA biosynthetic process	7	1.1531363186892e-18	FALSE
+GO:0016070	RNA metabolic process	7	1.7008137686108e-18	FALSE
+GO:0141187	nucleic acid biosynthetic process	7	2.76615121241841e-18	FALSE
+GO:0034654	nucleobase-containing compound biosynthetic process	7	7.37724571932134e-18	FALSE
+GO:0006139	nucleobase-containing compound metabolic process	7	2.90309138092161e-16	FALSE
+GO:0090304	nucleic acid metabolic process	7	4.40525145803135e-16	FALSE
+GO:0010467	gene expression	7	2.08017849889101e-15	FALSE
+GO:0009059	macromolecule biosynthetic process	7	1.02658952956139e-14	FALSE
+GO:0043484	regulation of RNA splicing	8	5.00169847697519e-15	TRUE
+GO:0048024	regulation of mRNA splicing, via spliceosome	8	1.60749659759385e-11	FALSE
+GO:0050684	regulation of mRNA processing	8	1.60749659759385e-11	FALSE
+GO:0000380	alternative mRNA splicing, via spliceosome	8	2.41318295484847e-11	FALSE
+GO:1903311	regulation of mRNA metabolic process	8	2.13696771486611e-10	FALSE
+GO:0000381	regulation of alternative mRNA splicing, via spliceosome	8	3.03227749126281e-07	FALSE
+GO:1903312	negative regulation of mRNA metabolic process	8	1.84988492996215e-05	FALSE
+GO:0033119	negative regulation of RNA splicing	8	0.000130275227231699	FALSE
+GO:0033120	positive regulation of RNA splicing	8	0.000140976327896413	FALSE
+GO:0048025	negative regulation of mRNA splicing, via spliceosome	8	0.000963003232844566	FALSE
+GO:0048026	positive regulation of mRNA splicing, via spliceosome	8	0.000963003232844566	FALSE
+GO:0050685	positive regulation of mRNA processing	8	0.000963003232844566	FALSE
+GO:0050686	negative regulation of mRNA processing	8	0.000963003232844566	FALSE
+GO:0051252	regulation of RNA metabolic process	8	0.00163614091757807	FALSE
+GO:0010629	negative regulation of gene expression	8	0.00426018521188927	FALSE
+GO:1903313	positive regulation of mRNA metabolic process	8	0.00639733970522926	FALSE
+GO:0000460	maturation of 5.8S rRNA	9	0.00015402065700074	TRUE
+GO:0042254	ribosome biogenesis	10	1.26553902838482e-43	TRUE
+GO:0022613	ribonucleoprotein complex biogenesis	10	1.1488754534209e-32	FALSE
+GO:0006364	rRNA processing	10	1.11803453822697e-22	FALSE
+GO:0016072	rRNA metabolic process	10	6.72055367355199e-22	FALSE
+GO:0044085	cellular component biogenesis	10	9.81735186730965e-18	FALSE
+GO:0042274	ribosomal small subunit biogenesis	10	3.13980332950317e-16	FALSE
+GO:0030490	maturation of SSU-rRNA	10	1.24699871945378e-07	FALSE
+GO:0000462	maturation of SSU-rRNA from tricistronic rRNA transcript (SSU-rRNA, 5.8S rRNA, LSU-rRNA)	10	4.29729056720369e-06	FALSE
+GO:0007399	nervous system development	11	6.74169507937761e-08	TRUE
+GO:0022008	neurogenesis	11	2.49014929737206e-05	FALSE
+GO:0048699	generation of neurons	11	0.000217611083774981	FALSE
+GO:0022603	regulation of anatomical structure morphogenesis	11	0.000245642705780668	FALSE
+GO:0000902	cell morphogenesis	11	0.000364492392872765	FALSE
+GO:0030182	neuron differentiation	11	0.000364492392872765	FALSE
+GO:0065008	regulation of biological quality	11	0.000685090468581834	FALSE
+GO:0031175	neuron projection development	11	0.00262461191866476	FALSE
+GO:0030030	cell projection organization	11	0.00650839066546205	FALSE
+GO:0120036	plasma membrane bounded cell projection organization	11	0.00650839066546205	FALSE
+GO:0048666	neuron development	11	0.00744283128400671	FALSE
+GO:0010975	regulation of neuron projection development	11	0.00858745974914733	FALSE
+GO:0048667	cell morphogenesis involved in neuron differentiation	11	0.00923821849035419	FALSE
+GO:0061564	axon development	11	0.0201164101008588	FALSE
+GO:0022604	regulation of cell morphogenesis	11	0.025033640638727	FALSE
+GO:0007409	axonogenesis	11	0.0313015770311671	FALSE
+GO:0007267	cell-cell signaling	11	0.0379011957252108	FALSE
+GO:0050803	regulation of synapse structure or activity	11	0.0388168305952178	FALSE
+GO:0050807	regulation of synapse organization	11	0.0388168305952178	FALSE
+GO:0031344	regulation of cell projection organization	11	0.0448599356356595	FALSE
+GO:0120035	regulation of plasma membrane bounded cell projection organization	11	0.0448599356356595	FALSE
+GO:0000910	cytokinesis	12	0.00490712038674536	TRUE
+GO:0051302	regulation of cell division	12	0.00490785797330992	FALSE
+GO:0032465	regulation of cytokinesis	12	0.0117668718317945	FALSE
+GO:0048513	animal organ development	13	8.00398253630043e-08	TRUE
+GO:0009888	tissue development	13	9.88664867724075e-07	FALSE
+GO:0009790	embryo development	13	4.23284379986496e-05	FALSE
+GO:0060429	epithelium development	13	8.43203570341885e-05	FALSE
+GO:0048598	embryonic morphogenesis	13	8.76749964783009e-05	FALSE
+GO:0009887	animal organ morphogenesis	13	0.000217611083774981	FALSE
+GO:0048729	tissue morphogenesis	13	0.000226370150789591	FALSE
+GO:0048568	embryonic organ development	13	0.000364492392872765	FALSE
+GO:0002009	morphogenesis of an epithelium	13	0.000946732252078392	FALSE
+GO:0001822	kidney development	13	0.00110745963928993	FALSE
+GO:0072001	renal system development	13	0.00152490120866622	FALSE
+GO:0001763	morphogenesis of a branching structure	13	0.00192713468181954	FALSE
+GO:0001501	skeletal system development	13	0.00210996491787072	FALSE
+GO:0060562	epithelial tube morphogenesis	13	0.00263477631436672	FALSE
+GO:0048562	embryonic organ morphogenesis	13	0.00269260548517259	FALSE
+GO:0009792	embryo development ending in birth or egg hatching	13	0.00328157896175268	FALSE
+GO:0003007	heart morphogenesis	13	0.00411426174772916	FALSE
+GO:0061138	morphogenesis of a branching epithelium	13	0.00600913454621332	FALSE
+GO:0048705	skeletal system morphogenesis	13	0.00624852324609242	FALSE
+GO:0043009	chordate embryonic development	13	0.00835549659261613	FALSE
+GO:0048738	cardiac muscle tissue development	13	0.00858745974914733	FALSE
+GO:0060485	mesenchyme development	13	0.00858745974914733	FALSE
+GO:0030855	epithelial cell differentiation	13	0.0103666319078358	FALSE
+GO:0001701	in utero embryonic development	13	0.0119903082642058	FALSE
+GO:0007507	heart development	13	0.0133644855422897	FALSE
+GO:0003205	cardiac chamber development	13	0.0140890866303056	FALSE
+GO:0001656	metanephros development	13	0.0293366675753454	FALSE
+GO:0072073	kidney epithelium development	13	0.0293366675753454	FALSE
+GO:0048754	branching morphogenesis of an epithelial tube	13	0.0388168305952178	FALSE
+GO:0014706	striated muscle tissue development	13	0.0390729489967846	FALSE
+GO:0060537	muscle tissue development	13	0.0390729489967846	FALSE
+GO:0032502	developmental process	14	8.82345280421892e-37	TRUE
+GO:0048856	anatomical structure development	14	7.58775210924022e-25	FALSE
+GO:0007275	multicellular organism development	14	1.05332967362296e-16	FALSE
+GO:0009653	anatomical structure morphogenesis	14	3.00654983394013e-16	FALSE
+GO:0048731	system development	14	1.01422609731091e-15	FALSE
+GO:0048869	cellular developmental process	14	2.46898857245749e-13	FALSE
+GO:0030154	cell differentiation	14	8.52152702131805e-13	FALSE
+GO:0032501	multicellular organismal process	14	8.52152702131805e-13	FALSE
+GO:0050793	regulation of developmental process	14	1.88037975709334e-10	FALSE
+GO:0048468	cell development	14	2.41593508825127e-09	FALSE
+GO:0048646	anatomical structure formation involved in morphogenesis	14	1.12234297497822e-06	FALSE
+GO:0051239	regulation of multicellular organismal process	14	1.21167770568105e-06	FALSE
+GO:0035239	tube morphogenesis	14	1.67946614864422e-06	FALSE
+GO:0045595	regulation of cell differentiation	14	6.63335337856084e-06	FALSE
+GO:0141124	intracellular signaling cassette	14	1.63904803183335e-05	FALSE
+GO:0035295	tube development	14	3.22848082831807e-05	FALSE
+GO:0051093	negative regulation of developmental process	14	0.000103786768340714	FALSE
+GO:0023052	signaling	14	0.000117616123999865	FALSE
+GO:0035556	intracellular signal transduction	14	0.000128217203010523	FALSE
+GO:0072359	circulatory system development	14	0.000196316637966208	FALSE
+GO:2000026	regulation of multicellular organismal development	14	0.000216586704061941	FALSE
+GO:0007154	cell communication	14	0.000217611083774981	FALSE
+GO:0051240	positive regulation of multicellular organismal process	14	0.000217611083774981	FALSE
+GO:0023051	regulation of signaling	14	0.000243612907462669	FALSE
+GO:0070887	cellular response to chemical stimulus	14	0.000273140665067316	FALSE
+GO:0007166	cell surface receptor signaling pathway	14	0.000280410547246891	FALSE
+GO:0048583	regulation of response to stimulus	14	0.000280410547246891	FALSE
+GO:0001568	blood vessel development	14	0.000364492392872765	FALSE
+GO:0001944	vasculature development	14	0.000364492392872765	FALSE
+GO:0048519	negative regulation of biological process	14	0.000364492392872765	FALSE
+GO:1901701	cellular response to oxygen-containing compound	14	0.00040710439856184	FALSE
+GO:1902531	regulation of intracellular signal transduction	14	0.000434291510710704	FALSE
+GO:0051094	positive regulation of developmental process	14	0.000539848122194022	FALSE
+GO:0007165	signal transduction	14	0.000693181786053906	FALSE
+GO:0050896	response to stimulus	14	0.000781218648652665	FALSE
+GO:0010646	regulation of cell communication	14	0.000946732252078392	FALSE
+GO:0051241	negative regulation of multicellular organismal process	14	0.00110745963928993	FALSE
+GO:0009893	positive regulation of metabolic process	14	0.00120296687488843	FALSE
+GO:0009966	regulation of signal transduction	14	0.00124377173041897	FALSE
+GO:0048514	blood vessel morphogenesis	14	0.00129565963728211	FALSE
+GO:0019222	regulation of metabolic process	14	0.00179607974382502	FALSE
+GO:0051716	cellular response to stimulus	14	0.0021084990328863	FALSE
+GO:0010604	positive regulation of macromolecule metabolic process	14	0.00215189449251738	FALSE
+GO:0045596	negative regulation of cell differentiation	14	0.00215189449251738	FALSE
+GO:1901700	response to oxygen-containing compound	14	0.00215189449251738	FALSE
+GO:0010557	positive regulation of macromolecule biosynthetic process	14	0.0023011821890239	FALSE
+GO:0060255	regulation of macromolecule metabolic process	14	0.0023011821890239	FALSE
+GO:0048523	negative regulation of cellular process	14	0.00239227438416079	FALSE
+GO:0048518	positive regulation of biological process	14	0.00258121563631297	FALSE
+GO:0009891	positive regulation of biosynthetic process	14	0.00298866811445333	FALSE
+GO:0023056	positive regulation of signaling	14	0.00338366339408872	FALSE
+GO:0048522	positive regulation of cellular process	14	0.00380062505919328	FALSE
+GO:0042221	response to chemical	14	0.00382653532113893	FALSE
+GO:0001525	angiogenesis	14	0.00429748624728214	FALSE
+GO:0045597	positive regulation of cell differentiation	14	0.00503733739771198	FALSE
+GO:0009967	positive regulation of signal transduction	14	0.00584844874071342	FALSE
+GO:0010647	positive regulation of cell communication	14	0.00600913454621332	FALSE
+GO:1902533	positive regulation of intracellular signal transduction	14	0.00923821849035419	FALSE
+GO:0010605	negative regulation of macromolecule metabolic process	14	0.0119903082642058	FALSE
+GO:0045893	positive regulation of DNA-templated transcription	14	0.012825856587892	FALSE
+GO:1902680	positive regulation of RNA biosynthetic process	14	0.012825856587892	FALSE
+GO:0009892	negative regulation of metabolic process	14	0.0130359060458269	FALSE
+GO:0009890	negative regulation of biosynthetic process	14	0.0163019127451816	FALSE
+GO:0048584	positive regulation of response to stimulus	14	0.0163019127451816	FALSE
+GO:0012501	programmed cell death	14	0.0215180200817113	FALSE
+GO:0010558	negative regulation of macromolecule biosynthetic process	14	0.0224034591646237	FALSE
+GO:0008219	cell death	14	0.0237102757144962	FALSE
+GO:0051254	positive regulation of RNA metabolic process	14	0.0251088979430055	FALSE
+GO:0006351	DNA-templated transcription	14	0.0273736244000272	FALSE
+GO:0045944	positive regulation of transcription by RNA polymerase II	14	0.0273736244000272	FALSE
+GO:0006915	apoptotic process	14	0.0280561080374138	FALSE
+GO:0045935	positive regulation of nucleobase-containing compound metabolic process	14	0.0384565127585656	FALSE
+GO:0006355	regulation of DNA-templated transcription	14	0.0388168305952178	FALSE
+GO:0043069	negative regulation of programmed cell death	14	0.0388168305952178	FALSE
+GO:2001141	regulation of RNA biosynthetic process	14	0.0388168305952178	FALSE
+GO:0043067	regulation of programmed cell death	14	0.0441559023441889	FALSE
+GO:0007420	brain development	15	0.00152490120866622	TRUE
+GO:0060322	head development	15	0.00262461191866476	FALSE
+GO:0045165	cell fate commitment	15	0.00535936079105645	FALSE
+GO:0007417	central nervous system development	15	0.00547496431300954	FALSE
+GO:0019827	stem cell population maintenance	15	0.00600913454621332	FALSE
+GO:0098727	maintenance of cell number	15	0.00600913454621332	FALSE
+GO:0007423	sensory organ development	15	0.00903980314735272	FALSE
+GO:0030900	forebrain development	15	0.0187935461980024	FALSE
+GO:0001654	eye development	15	0.025033640638727	FALSE
+GO:0048880	sensory system development	15	0.0307174355481427	FALSE
+GO:0150063	visual system development	15	0.0307174355481427	FALSE
+GO:0043010	camera-type eye development	15	0.0498332041885179	FALSE
+GO:0032101	regulation of response to external stimulus	16	1.77866538648427e-06	TRUE
+GO:0009605	response to external stimulus	16	6.33005061417819e-05	FALSE
+GO:0031347	regulation of defense response	16	0.000217611083774981	FALSE
+GO:0080134	regulation of response to stress	16	0.000364492392872765	FALSE
+GO:0030097	hemopoiesis	16	0.000434291510710704	FALSE
+GO:0001816	cytokine production	16	0.000539848122194022	FALSE
+GO:0001817	regulation of cytokine production	16	0.000539848122194022	FALSE
+GO:0001819	positive regulation of cytokine production	16	0.00215189449251738	FALSE
+GO:0030099	myeloid cell differentiation	16	0.00215189449251738	FALSE
+GO:0002831	regulation of response to biotic stimulus	16	0.00262461191866476	FALSE
+GO:0042110	T cell activation	16	0.00328157896175268	FALSE
+GO:0002682	regulation of immune system process	16	0.00392264747381628	FALSE
+GO:0046631	alpha-beta T cell activation	16	0.00392264747381628	FALSE
+GO:0002376	immune system process	16	0.00408781635026244	FALSE
+GO:0001775	cell activation	16	0.00558370203696207	FALSE
+GO:0050727	regulation of inflammatory response	16	0.00923821849035419	FALSE
+GO:0060284	regulation of cell development	16	0.00976143335802559	FALSE
+GO:0045321	leukocyte activation	16	0.0122392509076728	FALSE
+GO:0046649	lymphocyte activation	16	0.01245195022097	FALSE
+GO:1903131	mononuclear cell differentiation	16	0.0133644855422897	FALSE
+GO:0045637	regulation of myeloid cell differentiation	16	0.0134143814128546	FALSE
+GO:0010628	positive regulation of gene expression	16	0.0139427446274022	FALSE
+GO:0034599	cellular response to oxidative stress	16	0.0187935461980024	FALSE
+GO:0006954	inflammatory response	16	0.0198150087298371	FALSE
+GO:0002521	leukocyte differentiation	16	0.0234008109574823	FALSE
+GO:1903706	regulation of hemopoiesis	16	0.0242413465575198	FALSE
+GO:0045088	regulation of innate immune response	16	0.025033640638727	FALSE
+GO:0062197	cellular response to chemical stress	16	0.025033640638727	FALSE
+GO:0006793	phosphorus metabolic process	16	0.0281668781237061	FALSE
+GO:0006796	phosphate-containing compound metabolic process	16	0.0281668781237061	FALSE
+GO:0002263	cell activation involved in immune response	16	0.0313015770311671	FALSE
+GO:0002366	leukocyte activation involved in immune response	16	0.0313015770311671	FALSE
+GO:0030098	lymphocyte differentiation	16	0.0339908787623801	FALSE
+GO:0006979	response to oxidative stress	16	0.0384565127585656	FALSE
+GO:0002285	lymphocyte activation involved in immune response	16	0.0388168305952178	FALSE
+GO:0006950	response to stress	16	0.0388168305952178	FALSE
+GO:0002252	immune effector process	16	0.0473985724528997	FALSE
+GO:0001894	tissue homeostasis	17	0.0492234238748232	TRUE
+GO:0060249	anatomical structure homeostasis	17	0.0492234238748232	FALSE
+GO:0002181	cytoplasmic translation	18	0.0056731857731004	TRUE
+GO:0006412	translation	18	0.00927043495417959	FALSE
+GO:0002683	negative regulation of immune system process	19	0.0159210284242132	TRUE
+GO:0007155	cell adhesion	19	0.0249803067305009	FALSE
+GO:0032102	negative regulation of response to external stimulus	19	0.025033640638727	FALSE
+GO:0050777	negative regulation of immune response	19	0.0293366675753454	FALSE
+GO:0050866	negative regulation of cell activation	19	0.0388168305952178	FALSE
+GO:0007162	negative regulation of cell adhesion	19	0.0390729489967846	FALSE
+GO:0030155	regulation of cell adhesion	19	0.0390729489967846	FALSE
+GO:0048585	negative regulation of response to stimulus	19	0.0479056782759901	FALSE
+GO:0044057	regulation of system process	20	0.000946732252078392	TRUE
+GO:0003013	circulatory system process	20	0.00923821849035419	FALSE
+GO:0090257	regulation of muscle system process	20	0.00924771058357312	FALSE
+GO:0008015	blood circulation	20	0.0122392509076728	FALSE
+GO:0006937	regulation of muscle contraction	20	0.0140890866303056	FALSE
+GO:0003008	system process	20	0.0252991408362764	FALSE
+GO:0003015	heart process	20	0.0313015770311671	FALSE
+GO:0008016	regulation of heart contraction	20	0.0388168305952178	FALSE
+GO:0019216	regulation of lipid metabolic process	21	0.00923821849035419	TRUE
+GO:0006109	regulation of carbohydrate metabolic process	21	0.0140890866303056	FALSE
+GO:0046890	regulation of lipid biosynthetic process	21	0.0388168305952178	FALSE
+GO:0006897	endocytosis	22	0.000122192244687086	TRUE
+GO:0098657	import into cell	22	0.000295777043578959	FALSE
+GO:0030100	regulation of endocytosis	22	0.00124377173041897	FALSE
+GO:0006909	phagocytosis	22	0.00392264747381628	FALSE
+GO:0032879	regulation of localization	22	0.0239830164107297	FALSE
+GO:0060627	regulation of vesicle-mediated transport	22	0.0242413465575198	FALSE
+GO:0016192	vesicle-mediated transport	22	0.0249803067305009	FALSE
+GO:0051049	regulation of transport	22	0.029872243262571	FALSE
+GO:0010876	lipid localization	22	0.0390729489967846	FALSE
+GO:0071840	cellular component organization or biogenesis	23	1.0761520197224e-07	TRUE
+GO:0016043	cellular component organization	23	0.000197774928096059	FALSE
+GO:0007010	cytoskeleton organization	23	0.000294348247203243	FALSE
+GO:0006996	organelle organization	23	0.000404605437894333	FALSE
+GO:0051128	regulation of cellular component organization	23	0.00418083094851703	FALSE
+GO:0007369	gastrulation	24	0.0140890866303056	TRUE
+GO:0009611	response to wounding	25	0.00835549659261613	TRUE
+GO:0007596	blood coagulation	25	0.0293366675753454	FALSE
+GO:0007599	hemostasis	25	0.0293366675753454	FALSE
+GO:0050817	coagulation	25	0.0388168305952178	FALSE
+GO:0080090	regulation of primary metabolic process	26	0.0010697102076075	TRUE
+GO:0009889	regulation of biosynthetic process	26	0.0023011821890239	FALSE
+GO:0010556	regulation of macromolecule biosynthetic process	26	0.00258121563631297	FALSE
+GO:0010468	regulation of gene expression	26	0.00359026262265502	FALSE
+GO:0019219	regulation of nucleobase-containing compound metabolic process	26	0.00441762431260603	FALSE
+GO:0010586	miRNA metabolic process	27	0.00231045395072751	TRUE
+GO:0040007	growth	28	3.33683842057108e-06	TRUE
+GO:0048589	developmental growth	28	0.000122192244687086	FALSE
+GO:0040008	regulation of growth	28	0.000946732252078392	FALSE
+GO:0048638	regulation of developmental growth	28	0.0134143814128546	FALSE
+GO:0016049	cell growth	28	0.0151665089390985	FALSE
+GO:0045664	regulation of neuron differentiation	28	0.0293366675753454	FALSE
+GO:0048588	developmental cell growth	28	0.0293366675753454	FALSE
+GO:0045927	positive regulation of growth	28	0.0388168305952178	FALSE
+GO:0031099	regeneration	29	0.0134143814128546	TRUE
+GO:0042063	gliogenesis	30	0.0410688634437747	TRUE
+GO:0042273	ribosomal large subunit biogenesis	31	3.48806037263735e-06	TRUE
+GO:0042255	ribosome assembly	31	6.34001203723702e-06	FALSE
+GO:0048878	chemical homeostasis	32	0.00781534066274378	TRUE
+GO:0042592	homeostatic process	32	0.0171516394514694	FALSE
+GO:0050801	monoatomic ion homeostasis	32	0.0339908787623801	FALSE
+GO:0055080	monoatomic cation homeostasis	32	0.0339908787623801	FALSE
+GO:0098771	inorganic ion homeostasis	32	0.0448599356356595	FALSE
+GO:0045292	mRNA cis splicing, via spliceosome	33	0.000453462672995349	TRUE
+GO:0048732	gland development	34	0.00442607022026244	TRUE
+GO:0051028	mRNA transport	35	0.0475055828461785	TRUE
+GO:0051321	meiotic cell cycle	36	0.0202284727286729	TRUE
+GO:0140013	meiotic nuclear division	36	0.0374150886678586	FALSE

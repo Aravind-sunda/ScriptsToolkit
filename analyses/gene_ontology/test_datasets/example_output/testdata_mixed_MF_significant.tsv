@@ -1,0 +1,2 @@
+ID	Description	GeneRatio	BgRatio	RichFactor	FoldEnrichment	zScore	pvalue	p.adjust	qvalue	geneID	Count	p.adjust.allterms	n.terms.tested	AnnotationSize	Depth	Ontology
+GO:0008017	microtubule binding	8/72	20/891	0.4	4.95	5.29446786417671	7.09954370511527e-05	0.00944239312780331	0.00911730875814803	NDC80/SKA2/ABRAXAS2/NUSAP1/KIF23/KATNB1/KIF18B/CCDC66	8	0.0128501741062586	181	20	5	MF

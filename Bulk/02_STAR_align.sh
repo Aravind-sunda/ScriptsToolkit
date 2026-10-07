@@ -45,12 +45,12 @@ for fq1 in $INPUTDIR_FASTQ/*_R1_*${FQ_SUFFIX}; do
 
     echo "Started to align paired-end reads for sample $sample"
 
-    STAR --genomeDir "$GENOMEDIR" \
+    STAR --genomeDir "$GENOME_STAR_INDEX" \
          --sjdbGTFfile "$GTF" \
          --runThreadN "$SLURM_CPUS_PER_TASK" \
          --readFilesIn "$fq1" "$fq2" \
          --readFilesCommand zcat \
-         --sampleNamePrefix "$WORKING_DIR/star_output/${sample}." \
+         --outFileNamePrefix "$WORKING_DIR/star_output/${sample}." \
          --outSAMattributes All \
          --outSAMtype BAM SortedByCoordinate \
          --outReadsUnmapped Fastx \
@@ -66,7 +66,7 @@ done
 # STAR OPTIONAL PARAMETERS:
 # --outFilterScoreMinOverLread 0.1 # Used for shorter reads to set minimum score relative to read length
 # --outFilterMatchNminOverLread 0.1 # Used for shorter reads to set minimum match score relative to read length
-# --alignEndsType Local # used for soft clipping of adapters
+# --alignEndsType Local # used for soft clipping of adapters # local is default in star
 # --alignEndsType EndToEnd # no soft clipping of adapters
 
 # ========================================================================

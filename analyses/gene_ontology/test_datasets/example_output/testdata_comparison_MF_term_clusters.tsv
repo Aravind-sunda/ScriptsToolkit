@@ -1,0 +1,18 @@
+ID	Description	Cluster	BestPadj	Representative
+GO:0003723	RNA binding	1	1.31885991715974e-17	TRUE
+GO:0003676	nucleic acid binding	1	1.87235600001625e-12	FALSE
+GO:0003727	single-stranded RNA binding	2	0.0128963769018449	TRUE
+GO:0003729	mRNA binding	3	1.17838269352065e-13	TRUE
+GO:0003730	mRNA 3'-UTR binding	3	0.00162438717576206	FALSE
+GO:0003735	structural constituent of ribosome	4	9.70766877703362e-05	TRUE
+GO:0005198	structural molecule activity	4	0.0499478153958045	FALSE
+GO:0008017	microtubule binding	5	0.0128501741062586	TRUE
+GO:0140102	catalytic activity, acting on a rRNA	6	0.00826470364363695	TRUE
+GO:0140098	catalytic activity, acting on RNA	6	0.0158609378362968	FALSE
+GO:0140640	catalytic activity, acting on a nucleic acid	6	0.0158609378362968	FALSE
+GO:0008649	rRNA methyltransferase activity	6	0.0286558564312299	FALSE
+GO:0008757	S-adenosylmethionine-dependent methyltransferase activity	6	0.0323472787095593	FALSE
+GO:0017069	snRNA binding	7	4.08467692694789e-07	TRUE
+GO:0019843	rRNA binding	8	9.70766877703362e-05	TRUE
+GO:0043021	ribonucleoprotein complex binding	8	0.0222805962720171	FALSE
+GO:0036002	pre-mRNA binding	9	0.00235726003328552	TRUE

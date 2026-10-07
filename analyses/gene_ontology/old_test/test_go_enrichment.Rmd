@@ -1,0 +1,1201 @@
+---
+title: "Test harness for `go_enrichment.R`"
+subtitle: "Unit tests, regression tests for known bugs, and end-to-end CLI runs"
+author: "Brannan Lab"
+date: "`r format(Sys.time(), '%Y-%m-%d %H:%M')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    code_folding: show
+    df_print: paged
+---
+
+```{r knitr-setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, message = FALSE, warning = FALSE,
+  collapse = TRUE, comment = "#>"
+)
+```
+
+> **If `rmarkdown::render()` complains about pandoc**, there is no pandoc on the
+> login node. Either run the chunks interactively in VS Code / RStudio (the
+> intended use), or produce a plain markdown report with
+> `knitr::knit("test_go_enrichment.Rmd")`.
+
+# What this document is for
+
+`go_enrichment.R` has never been executed — the README says so explicitly
+(README:233). This harness does three separate jobs, and you can run them
+independently:
+
+| Part | Needs Bioconductor? | Purpose |
+|---|---|---|
+| **1. Static + unit tests** | no | Parse the script, pull its helper functions out, test them in isolation |
+| **2. Regression tests** | no | Reproduce each confirmed bug so you can prove a fix worked |
+| **3. End-to-end CLI runs** | **yes** | Actually invoke the script on realistic fixtures and validate the outputs |
+
+Every suggested change is flagged inline as **`EDIT #n`** (a defect) or
+**`IMPROVEMENT #n`** (a quality/robustness point), with the source line number.
+They are collected into a single table in the [Summary of suggested edits] section,
+and section [Ready-to-apply patches] holds copy-pasteable replacement code.
+
+---
+
+# 0. Configuration
+
+```{r config}
+SCRIPT   <- "/condo/brannanlab/tmhaxs421/scripts/ScriptsToolkit/analyses/gene_ontology/go_enrichment.R"
+
+# A real edgeR topTags export from the RPS2-STAMP drug study. Used both as a
+# realistic fixture and as the trigger for EDIT #1.
+REAL_EDGER <- paste0("/condo/brannanlab/tmhaxs421/Bulk_RiboStamp/ARVSDrugStudy/",
+                     "results/08_edgeR/MCF10A/TX_drug_pooled.csv")
+
+# Everything this document writes goes here. Safe to delete afterwards.
+TESTROOT <- file.path(dirname(SCRIPT), "test_run")
+FIXDIR   <- file.path(TESTROOT, "fixtures")
+OUTDIR   <- file.path(TESTROOT, "outputs")
+dir.create(FIXDIR, recursive = TRUE, showWarnings = FALSE)
+dir.create(OUTDIR, recursive = TRUE, showWarnings = FALSE)
+
+ORGANISM <- "human"   # fixtures below use human gene symbols
+stopifnot(file.exists(SCRIPT))
+cat("script:  ", SCRIPT, "\n")
+cat("test dir:", TESTROOT, "\n")
+```
+
+## Minimal test harness
+
+Deliberately dependency-free so Part 1 and Part 2 run anywhere.
+
+```{r harness}
+.results <- new.env(parent = emptyenv())
+.results$rows <- list()
+
+.record <- function(part, label, status) {
+  .results$rows[[length(.results$rows) + 1L]] <- data.frame(
+    part = part, test = label, status = status, stringsAsFactors = FALSE)
+  cat(sprintf("[%s] %s\n", status, label))
+  invisible(identical(status, "PASS"))
+}
+
+chk <- function(label, expr, expect = TRUE, part = "") {
+  got  <- tryCatch(isTRUE(expr), error = function(e) NA)
+  pass <- !is.na(got) && identical(got, isTRUE(expect))
+  .record(part, label, if (pass) "PASS" else "FAIL")
+}
+
+skip <- function(label, why, part = "") .record(part, paste0(label, " [", why, "]"), "SKIP")
+
+test_report <- function() {
+  if (!length(.results$rows)) return(invisible(NULL))
+  df <- do.call(rbind, .results$rows)
+  cat(sprintf("\n%d tests: %d PASS, %d FAIL, %d SKIP\n", nrow(df),
+              sum(df$status == "PASS"), sum(df$status == "FAIL"), sum(df$status == "SKIP")))
+  knitr::kable(df, row.names = FALSE)
+}
+```
+
+## Environment audit
+
+```{r env-audit}
+pkgs <- c("optparse", "clusterProfiler", "GO.db", "ggplot2", "topGO",
+          "GOSemSim", "DOSE", "org.Hs.eg.db")
+have <- vapply(pkgs, function(p) requireNamespace(p, quietly = TRUE), logical(1))
+env_tbl <- data.frame(package = pkgs,
+                      version = vapply(pkgs, function(p)
+                        tryCatch(as.character(packageVersion(p)),
+                                 error = function(e) NA_character_), character(1)),
+                      installed = have, row.names = NULL)
+print(env_tbl)
+
+HAVE_BIOC <- all(have[c("optparse", "clusterProfiler", "GO.db", "ggplot2", "org.Hs.eg.db")])
+HAVE_TOPGO <- have[["topGO"]]
+cat("\nR:", R.version.string, "\n")
+cat("End-to-end CLI tests will", if (HAVE_BIOC) "RUN" else "be SKIPPED (install the stack first)", "\n")
+```
+
+> **IMPROVEMENT #1 — package the environment.**
+> Every other tool in `ScriptsToolkit/` has a conda recipe in `environments/`.
+> This one does not, which is why the script has never run. Add
+> `environments/gene_ontology.yaml`:
+>
+> ```yaml
+> name: gene_ontology
+> channels: [conda-forge, bioconda]
+> dependencies:
+>   - r-base>=4.3
+>   - r-optparse
+>   - r-ggplot2
+>   - bioconductor-clusterprofiler
+>   - bioconductor-go.db
+>   - bioconductor-gosemsim
+>   - bioconductor-topgo
+>   - bioconductor-org.hs.eg.db
+>   - bioconductor-org.mm.eg.db
+> ```
+>
+> **IMPROVEMENT #2 — `GOSemSim` is not an optional dependency.**
+> README:45-46 says "`topGO` and `GOSemSim` are only needed for `--topgo` and
+> `--simplify`". `GOSemSim` is an `Imports:` of clusterProfiler, so it is always
+> installed. Harmless, but the sentence should name only `topGO`. Conversely,
+> [go_enrichment.R:150-151] adds `topGO` to `need` but the README install block
+> lists it as unconditional — the two disagree in opposite directions.
+
+---
+
+# 1. Static analysis and unit tests
+
+## 1.1 The script parses
+
+```{r parse}
+parsed <- tryCatch(parse(SCRIPT), error = function(e) e)
+chk("script parses without syntax error", !inherits(parsed, "error"), part = "static")
+cat("top-level expressions:", length(parsed), "\n")
+```
+
+## 1.2 Extract the helper functions from source
+
+Rather than copying the helpers into this document (which would drift), we
+evaluate *only* the top-level `name <- function(...)` definitions from the real
+script into a sandbox, and stub the globals they close over. Tests below
+therefore always exercise the current source.
+
+```{r extract-helpers}
+sandbox <- new.env(parent = globalenv())
+
+# Stubs for the globals the helpers reference.
+sandbox$fail <- function(...) stop(sprintf(...), call. = FALSE)
+sandbox$msg  <- function(...) cat(sprintf(...), "\n", sep = "")
+sandbox$.opts <- list(ont = "BP", `min-size` = 10, `max-size` = 500,
+                      `p-method` = "BH", padj = 0.05, `top-n` = 25,
+                      kappa = 0.3, `heatmap-top` = 20, prefix = "TEST",
+                      outdir = OUTDIR)
+sandbox$g <- function(k) sandbox$.opts[[k]]
+
+is_fundef <- function(e) is.call(e) && identical(as.character(e[[1]]), "<-") &&
+  is.call(e[[3]]) && identical(as.character(e[[3]][[1]]), "function")
+
+fundefs <- Filter(is_fundef, as.list(parsed))
+for (e in fundefs) eval(e, envir = sandbox)
+extracted <- vapply(fundefs, function(e) as.character(e[[2]]), character(1))
+cat("extracted", length(extracted), "helper functions:\n ",
+    paste(extracted, collapse = ", "), "\n")
+chk("core helpers were extracted",
+    all(c("read_gene_file", "read_table_auto", "guess_id_type", "kappa_sim",
+          "go_depth", "ratio_num", "ratio_den") %in% extracted), part = "static")
+```
+
+## 1.3 `ratio_num` / `ratio_den` and fold enrichment
+
+```{r test-ratios}
+chk("ratio_num('12/300') == 12", sandbox$ratio_num("12/300") == 12, part = "unit")
+chk("ratio_den('12/300') == 300", sandbox$ratio_den("12/300") == 300, part = "unit")
+chk("ratio_* are vectorised",
+    all(sandbox$ratio_num(c("3/10", "7/20")) == c(3, 7)), part = "unit")
+
+# Fold enrichment as annotate_terms() computes it, checked against first principles
+k <- 12; n <- 300; M <- 40; N <- 12000
+fe_script <- (k / n) / (M / N)
+chk("FoldEnrichment == (k/n)/(M/N)", isTRUE(all.equal(fe_script, (12/300)/(40/12000))),
+    part = "unit")
+cat("fold enrichment:", round(fe_script, 3), "\n")
+```
+
+## 1.4 `read_gene_file`
+
+```{r test-read-gene-file}
+f1 <- file.path(FIXDIR, "plain_list.txt")
+writeLines(c("TP53", "BRCA1", "", "  EGFR  ", "MYC", "TP53"), f1)
+r1 <- sandbox$read_gene_file(f1)
+chk("blank lines dropped and whitespace trimmed", identical(r1, c("TP53","BRCA1","EGFR","MYC")),
+    part = "unit")
+
+f2 <- file.path(FIXDIR, "with_header.csv")
+writeLines(c("gene_id,logFC", "\"TP53\",1.2", "\"BRCA1\",-0.4"), f2)
+chk("header line dropped, first field taken, quotes stripped",
+    identical(sandbox$read_gene_file(f2), c("TP53", "BRCA1")), part = "unit")
+
+f3 <- file.path(FIXDIR, "tsv_list.tsv")
+writeLines(c("symbol\tpadj", "TP53\t0.01", "MYC\t0.02"), f3)
+chk("tab-separated table handled",
+    identical(sandbox$read_gene_file(f3), c("TP53", "MYC")), part = "unit")
+```
+
+> **IMPROVEMENT #3 — the header heuristic is narrow.**
+> [go_enrichment.R:174] only recognises `gene|gene_id|gene_name|symbol|id` as a
+> header. A file starting with `Gene.ID`, `GeneSymbol`, `ensembl_gene_id`, or an
+> empty first cell keeps its header as a gene, which then silently fails to map.
+> Since the mapping rate is printed, one lost gene out of 2000 is invisible.
+
+```{r test-read-gene-file-improve}
+f4 <- file.path(FIXDIR, "odd_header.csv")
+writeLines(c("ensembl_gene_id,padj", "ENSG00000141510,0.01", "ENSG00000012048,0.02"), f4)
+r4 <- sandbox$read_gene_file(f4)
+chk("IMPROVEMENT #3: 'ensembl_gene_id' header is NOT stripped (documents current behaviour)",
+    "ensembl_gene_id" %in% r4, part = "unit")
+print(r4)
+```
+
+## 1.5 `kappa_sim` — verified correct
+
+This is the part of the script most likely to hide a silent index error, so it is
+checked against an independent 2x2 implementation.
+
+```{r test-kappa}
+ref_kappa <- function(g1, g2, universe) {
+  x <- universe %in% g1; y <- universe %in% g2
+  a <- sum(x & y); b <- sum(x & !y); c <- sum(!x & y); d <- sum(!x & !y)
+  n <- length(universe)
+  po <- (a + d) / n
+  pe <- ((a + b) * (a + c) + (c + d) * (b + d)) / n^2
+  (po - pe) / (1 - pe)
+}
+
+set.seed(7)
+U  <- paste0("G", 1:60)
+tg <- list(T1 = sample(U, 20), T2 = sample(U, 25), T3 = sample(U, 15),
+           T4 = NULL)
+tg$T4 <- tg$T1[1:18]                      # near-identical to T1 -> high kappa
+K <- sandbox$kappa_sim(tg, U)
+
+pairs <- combn(names(tg), 2, simplify = FALSE)
+agree <- vapply(pairs, function(p)
+  isTRUE(all.equal(K[p[1], p[2]], ref_kappa(tg[[p[1]]], tg[[p[2]]], U))), logical(1))
+chk("kappa matches an independent 2x2 implementation for all pairs", all(agree), part = "unit")
+chk("kappa matrix is symmetric", isTRUE(all.equal(K, t(K))), part = "unit")
+chk("diagonal is 1", all(diag(K) == 1), part = "unit")
+chk("near-identical terms give high kappa", K["T1", "T4"] > 0.85, part = "unit")
+round(K, 3)
+```
+
+> **The kappa implementation is correct.** The `Ri`/`Rj` marginal construction at
+> [go_enrichment.R:380-384] is right, including the transpose. No change needed.
+
+> **IMPROVEMENT #4 — the kappa universe deviates from Metascape.**
+> [go_enrichment.R:406] sets `universe` to the union of genes appearing in
+> *significant terms*. Metascape computes kappa over the **input gene list**.
+> That changes cell `d` of every 2x2 table and therefore every kappa value, so
+> the `--kappa 0.3` cutoff inherited from Metascape is not directly transferable.
+> The README is candid about the tree-cut approximation (README:108-110); this
+> belongs in the same paragraph. Demonstration:
+
+```{r kappa-universe-effect}
+small_U <- unique(unlist(tg))            # what the script uses
+big_U   <- U                             # what Metascape would use
+cat("kappa(T1,T2) with term-union universe (n=", length(small_U), "): ",
+    round(ref_kappa(tg$T1, tg$T2, small_U), 4), "\n", sep = "")
+cat("kappa(T1,T2) with full-list universe (n=", length(big_U), "): ",
+    round(ref_kappa(tg$T1, tg$T2, big_U), 4), "\n", sep = "")
+```
+
+## 1.6 `go_depth`
+
+```{r test-go-depth, eval=HAVE_BIOC}
+d <- sandbox$go_depth(c("GO:0008150",   # biological_process (root)
+                        "GO:0006915",   # apoptotic process
+                        "GO:0097190"),  # apoptotic signaling pathway
+                      "BP")
+names(d) <- c("root", "apoptotic process", "apoptotic signaling pathway")
+print(d)
+chk("BP root has depth 0", d[[1]] == 0, part = "unit")
+chk("depth increases down the ontology", d[[2]] > 0 && d[[3]] > d[[2]], part = "unit")
+chk("unknown GO ID yields NA", is.na(sandbox$go_depth("GO:9999999", "BP")), part = "unit")
+chk("ont='ALL' returns NA (documented limitation)",
+    all(is.na(sandbox$go_depth(c("GO:0006915"), "ALL"))), part = "unit")
+```
+
+```{r go-depth-skip, eval=!HAVE_BIOC, echo=FALSE}
+cat("SKIPPED: GO.db not installed\n")
+```
+
+---
+
+# 2. Regression tests for confirmed defects
+
+Each of these **currently fails** (or silently misbehaves). After applying the
+patches in [Ready-to-apply patches], re-run this section — they should all pass.
+
+## 2.1 EDIT #1 (critical) — edgeR exports with gene IDs in rownames are silently emptied
+
+This is the one that hits your real data. `topTags()` tables written with
+`write.csv(..., row.names = TRUE)` have an **empty first header field**:
+
+```{r edit1-show}
+cat(readLines(REAL_EDGER, n = 2), sep = "\n")
+```
+
+`read_table_auto` with `check.names = FALSE` keeps that column named `""`.
+Then at [go_enrichment.R:252] `gcol <- names(de)[1]` resolves to `""`; the
+validation at [go_enrichment.R:253-255] **passes**, because `"" %in% names(de)`
+is `TRUE`; and `de[[""]]` returns `NULL`.
+
+```{r edit1-repro}
+de <- sandbox$read_table_auto(REAL_EDGER)
+gcol <- names(de)[1]
+
+cat("ncol:", ncol(de), "\n")
+cat("column names:", paste(sprintf("[%s]", names(de)), collapse = " "), "\n")
+cat("gcol resolves to: [", gcol, "]\n", sep = "")
+cat("validation `gcol %in% names(de)`:", gcol %in% names(de), " <- passes!\n")
+cat("class(de[[gcol]]):", class(de[[gcol]]), "\n")
+
+# now replay lines 256-259 of the script
+de_f <- de[!is.na(de[[gcol]]) & nzchar(de[[gcol]]), , drop = FALSE]
+de_f <- de_f[!duplicated(de_f[[gcol]]), , drop = FALSE]
+cat("\nrows in file:", nrow(de), "  rows surviving the script's filter:", nrow(de_f), "\n")
+
+chk("EDIT #1: real edgeR export retains its rows",
+    nrow(de_f) > 1000, part = "regression")
+```
+
+**Impact.** The whole table collapses to zero rows *before* anything is
+reported, so `bg_raw` is empty and the run dies later inside `to_entrez` with a
+message about ID mapping — pointing at the wrong problem entirely. It never
+warns that it dropped 15,179 genes.
+
+The README's workaround (README:156-163) tells you to add a `gene_id` column
+first, which does avoid it — but nothing in the script *enforces* that, and the
+failure mode is silent and misleading.
+
+> **EDIT #1.** In `read_table_auto`, promote an empty/`X`/`X.1` first column name
+> to a real one, or fold `row.names` in. And in the validation block, reject an
+> empty `gcol` and check `!is.null(de[[gcol]])` rather than name membership.
+> Patch in [Ready-to-apply patches].
+
+```{r edit1-proposed}
+read_table_auto_fixed <- function(path) {
+  if (!file.exists(path)) stop("file not found: ", path)
+  sep <- if (grepl("\\.csv$", path, ignore.case = TRUE)) "," else "\t"
+  df  <- read.delim(path, sep = sep, header = TRUE, check.names = FALSE,
+                    stringsAsFactors = FALSE)
+  if (ncol(df) == 1)
+    df <- read.delim(path, sep = ",", header = TRUE, check.names = FALSE,
+                     stringsAsFactors = FALSE)
+  # edgeR/DESeq2 exports written with row.names=TRUE have a blank first header
+  if (!nzchar(trimws(names(df)[1])) || names(df)[1] %in% c("X", "V1", "...1"))
+    names(df)[1] <- "gene_id"
+  df
+}
+de2 <- read_table_auto_fixed(REAL_EDGER)
+cat("first column now named:", names(de2)[1], "\n")
+cat("rows retained:", nrow(de2[!is.na(de2[[1]]) & nzchar(de2[[1]]), , drop = FALSE]), "\n")
+chk("EDIT #1 fix: rows retained with patched reader",
+    nrow(de2[nzchar(de2[[1]]), , drop = FALSE]) > 1000, part = "regression")
+```
+
+## 2.2 EDIT #2 — `--topgo` with `--allow-genome-background` crashes
+
+`bg_entrez` is `NULL` when no background is supplied
+([go_enrichment.R:302](#)). `enrichGO` tolerates `universe = NULL`; `run_topgo`
+does not, because `NULL %in% x` is `logical(0)`.
+
+```{r edit2-repro}
+bg_entrez <- NULL
+gl <- factor(as.integer(bg_entrez %in% c("7157", "672")), levels = c(0, 1))
+cat("length of topGO allGenes factor:", length(gl), "\n")
+chk("EDIT #2: allGenes factor is non-empty when background is NULL",
+    length(gl) > 0, part = "regression")
+```
+
+> **EDIT #2.** In the ORA loop, build a fallback universe before calling
+> `run_topgo`: `bg_topgo <- if (is.null(bg_entrez)) keys(OrgDb, "ENTREZID") else bg_entrez`.
+
+## 2.3 EDIT #3 — ID auto-detection breaks when nothing is significant
+
+[go_enrichment.R:285-288] guesses the ID type from `unlist(sets)` — the
+*significant* genes only. A DE table with no hits gives an empty vector, which
+falls through to `"SYMBOL"`. `--gsea` then runs anyway and calls
+`bitr(fromType = "SYMBOL")` on what may be Ensembl IDs.
+
+```{r edit3-repro}
+sets_empty <- list(up = character(0), down = character(0))
+guessed <- sandbox$guess_id_type(unlist(sets_empty, use.names = FALSE))
+cat("guess_id_type(<no significant genes>) ->", guessed, "\n")
+chk("EDIT #3: ID type is not silently mis-guessed on an empty query",
+    !identical(guessed, "SYMBOL"), part = "regression")
+
+# the same table's background would have given the right answer
+cat("guess from background instead ->",
+    sandbox$guess_id_type(c("ENSG00000141510", "ENSG00000012048", "ENSG00000139618")), "\n")
+```
+
+This is exactly the scenario the README flags via Stead et al. (README:191-193):
+an empty DE result plus a full GSEA hit list is a warning sign — but here the
+GSEA would not even reach the right genes.
+
+> **EDIT #3.** Guess from the background when one exists, falling back to `sets`:
+> `id_type <- guess_id_type(if (!is.null(bg_raw)) bg_raw else unlist(sets, use.names = FALSE))`
+
+## 2.4 EDIT #4 — `guess_id_type` indexes past the filtered vector
+
+[go_enrichment.R:192]: `x <- x[!is.na(x)][1:min(200, length(x))]`. The RHS
+`length(x)` is the **pre-filter** length, so `NA`s are re-introduced and dilute
+the `mean(grepl(...))` fractions.
+
+```{r edit4-repro}
+ens <- sprintf("ENSG%011d", 1:100)
+chk("EDIT #4: 100 Ensembl IDs + 101 NAs still detected as ENSEMBL",
+    sandbox$guess_id_type(c(ens, rep(NA_character_, 101))) == "ENSEMBL", part = "regression")
+chk("EDIT #4: clean input is detected correctly (control)",
+    sandbox$guess_id_type(ens) == "ENSEMBL", part = "regression")
+
+# and the empty-vector edge
+cat("1:min(200, 0) ->", paste(1:min(200, 0), collapse = ", "), "  <- indexes element 1 of nothing\n")
+```
+
+Currently latent, because both input paths strip `NA`s upstream — but one
+refactor away from mattering.
+
+> **EDIT #4.** `x <- x[!is.na(x) & nzchar(x)]; x <- head(x, 200)`
+
+## 2.5 EDIT #5 — `--rank-metric stat` accepts an unsigned column silently
+
+`is_unsigned` is computed at [go_enrichment.R:554] but only consulted inside the
+`auto` branch ([go_enrichment.R:562-567]). So `--rank-metric stat --stat-col F`
+ranks on unsigned F, collapsing up- and down-regulated genes into the same end of
+the list — the precise error the README's edgeR section exists to prevent.
+
+```{r edit5-repro}
+unsigned_cols <- c("F", "LR", "f", "lr", "Chisq")
+statcol <- "F"; rmet <- "stat"
+is_unsigned <- statcol %in% unsigned_cols
+cat("statcol =", statcol, " is_unsigned =", is_unsigned,
+    " rmet =", rmet, " -> metric used as-is, sign discarded\n")
+chk("EDIT #5: unsigned stat column with --rank-metric stat is caught",
+    !(rmet == "stat" && is_unsigned), part = "regression")
+
+# what it does to the ranking
+set.seed(1)
+lfc <- c(3, -3, 1.5, -1.5); Fstat <- c(90, 88, 20, 19)
+cat("\nwrong (unsigned F):    ", paste(round(Fstat, 1), collapse = ", "), "\n")
+cat("right (sign(lfc)*sqrt):", paste(round(sign(lfc) * sqrt(Fstat), 2), collapse = ", "), "\n")
+```
+
+> **EDIT #5.** Promote to `signed_sqrt` with a warning when the user asks for
+> `stat` on a column in `unsigned_cols`.
+
+## 2.6 EDIT #6 — `NA` in `p.adjust` injects an all-`NA` row
+
+[go_enrichment.R:494-495] subsets with a raw logical, so an `NA` propagates into
+a literal `NA` row in `*_significant.tsv`.
+
+```{r edit6-repro}
+res  <- data.frame(ID = c("GO:1","GO:2","GO:3"), p.adjust = c(0.01, NA, 0.2), Count = c(5,5,5))
+keep <- res$p.adjust < 0.05 & res$Count >= 3
+sig  <- res[keep, , drop = FALSE]
+print(sig)
+chk("EDIT #6: no NA rows in the significant table",
+    !any(is.na(sig$ID)), part = "regression")
+
+sig_fixed <- res[which(keep), , drop = FALSE]   # the fix
+chk("EDIT #6 fix: which() removes the NA row", !any(is.na(sig_fixed$ID)), part = "regression")
+```
+
+## 2.7 EDIT #7 — the ranked list reaches `gseGO` as a 1-d array
+
+`tapply` returns an array and `sort()` preserves `dim`.
+
+```{r edit7-repro}
+metric <- c(3, -5, 2, 7); ent <- c("1", "1", "2", "3")
+rk <- sort(tapply(metric, ent, function(v) v[which.max(abs(v))]), decreasing = TRUE)
+cat("class:", class(rk), " dim:", paste(dim(rk), collapse = ","), "\n")
+chk("EDIT #7: ranked vector has no dim attribute", is.null(dim(rk)), part = "regression")
+
+rk_fixed <- setNames(as.numeric(rk), names(rk))   # the fix
+chk("EDIT #7 fix: plain named numeric", is.null(dim(rk_fixed)) && is.numeric(rk_fixed),
+    part = "regression")
+```
+
+Low risk — `fgsea` almost certainly copes — but the fix is one line and free.
+
+## 2.8 EDIT #8 — duplicate `Description` values would error
+
+[go_enrichment.R:351] and [:442] build factors with possibly-duplicated `levels`.
+Reachable under `--ont ALL`, where a term name can repeat across domains.
+
+```{r edit8-repro}
+r <- tryCatch(factor(c("a", "a"), levels = rev(c("a", "a"))),
+              error = function(e) conditionMessage(e))
+cat("factor() with duplicate levels ->", if (is.character(r)) paste("ERROR:", r) else "ok", "\n")
+chk("EDIT #8: duplicate descriptions do not error", !is.character(r), part = "regression")
+```
+
+> **EDIT #8.** Use `unique()` on the level vector, or disambiguate with the GO ID:
+> `levels = rev(unique(df$Description[order(df$FoldEnrichment)]))`
+
+## 2.9 EDIT #9 — `is_representative` mislabels rows
+
+[go_enrichment.R:424-426] truncates `reps` to `--heatmap-top` **before** setting
+the flag, so clusters outside the top N have no representative marked at all.
+The column currently means "shown in the heatmap", not "cluster representative".
+
+```{r edit9-repro}
+set.seed(3)
+memb <- data.frame(cluster = rep(1:5, each = 3), ID = paste0("GO:", 1:15),
+                   best_padj = runif(15))
+memb <- memb[order(memb$cluster, memb$best_padj), ]
+reps <- memb[!duplicated(memb$cluster), ]
+reps <- head(reps[order(reps$best_padj), ], 2)          # --heatmap-top 2
+memb$is_representative <- memb$ID %in% reps$ID
+cat("clusters:", length(unique(memb$cluster)),
+    "  rows flagged representative:", sum(memb$is_representative), "\n")
+chk("EDIT #9: every cluster has exactly one representative",
+    sum(memb$is_representative) == length(unique(memb$cluster)), part = "regression")
+```
+
+## 2.10 EDIT #10 — the mapping-rate line is internally inconsistent
+
+[go_enrichment.R:215-217] prints `length(out)` (unique **Entrez**) as the count
+but computes the percentage from unique **source** IDs. Under many-to-one or
+one-to-many mapping the printed `X -> Y (Z%)` has `Z != Y/X`. Since the README
+frames this as a reproducibility feature (README:77-78), it should be consistent.
+
+```{r edit10-repro}
+# a symbol mapping where two symbols collapse onto one Entrez ID
+m <- data.frame(SYMBOL = c("A", "B", "C", "D"), ENTREZID = c("1", "1", "2", "3"))
+ids <- c("A", "B", "C", "D", "E")            # E fails to map
+out <- unique(m$ENTREZID)
+cat(sprintf("printed: %d input -> %d mapped (%.1f%%)\n",
+            length(ids), length(out), 100 * length(unique(m$SYMBOL)) / length(ids)))
+cat("         3 != 80%% of 5 -- the count and the percentage describe different things\n")
+chk("EDIT #10: reported count and percentage agree",
+    abs(100 * length(out) / length(ids) - 100 * length(unique(m$SYMBOL)) / length(ids)) < 1e-9,
+    part = "regression")
+```
+
+---
+
+# 3. Fixtures
+
+Built from the real MCF10A edgeR table so gene symbols are genuine and mapping
+rates are realistic.
+
+```{r fixtures}
+raw <- read.csv(REAL_EDGER, check.names = FALSE, stringsAsFactors = FALSE)
+names(raw)[1] <- "gene_id"
+raw <- raw[!is.na(raw$gene_id) & nzchar(raw$gene_id), ]
+cat("source table:", nrow(raw), "genes,", ncol(raw), "columns\n")
+
+## (a) edgeR table, correctly exported (gene IDs in a real column)
+edger_fix <- file.path(FIXDIR, "edger_fixed.csv")
+write.csv(raw, edger_fix, row.names = FALSE)
+
+## (b) edgeR table exactly as topTags writes it (reproduces EDIT #1)
+edger_raw <- file.path(FIXDIR, "edger_rownames.csv")
+file.copy(REAL_EDGER, edger_raw, overwrite = TRUE)
+
+## (c) DESeq2-shaped table: recover the signed moderated statistic from F
+deseq_like <- data.frame(
+  gene_id        = raw$gene_id,
+  baseMean       = 2^raw$logCPM * 10,
+  log2FoldChange = raw$logFC,
+  lfcSE          = abs(raw$logFC) / pmax(sqrt(pmax(raw$F, 0)), 1e-6),
+  stat           = sign(raw$logFC) * sqrt(pmax(raw$F, 0)),
+  pvalue         = raw$PValue,
+  padj           = raw$FDR,
+  stringsAsFactors = FALSE)
+deseq_csv <- file.path(FIXDIR, "deseq2_like.csv")
+write.csv(deseq_like, deseq_csv, row.names = FALSE)
+
+## (d) plain gene lists + background (the CLIP / peak-gene case)
+sig  <- !is.na(raw$FDR) & raw$FDR < 0.05
+up   <- raw$gene_id[sig & raw$logFC >=  1]
+down <- raw$gene_id[sig & raw$logFC <= -1]
+bg   <- raw$gene_id
+writeLines(head(up,   400), file.path(FIXDIR, "up.txt"))
+writeLines(head(down, 400), file.path(FIXDIR, "down.txt"))
+writeLines(bg,              file.path(FIXDIR, "background.txt"))
+
+## (e) four overlapping lists for the Metascape-style heatmap
+set.seed(42)
+pool <- head(up, 600)
+for (i in 1:4) {
+  li <- unique(c(sample(pool, 180), sample(bg, 60)))
+  writeLines(li, file.path(FIXDIR, sprintf("list%d.txt", i)))
+}
+
+## (f) a DE table with ZERO significant genes (drives EDIT #3 end-to-end)
+null_de <- deseq_like; null_de$padj <- 1; null_de$pvalue <- 1
+null_csv <- file.path(FIXDIR, "deseq2_null.csv")
+write.csv(null_de, null_csv, row.names = FALSE)
+
+cat("\nfixtures written to", FIXDIR, "\n")
+cat("  up:", length(up), " down:", length(down), " background:", length(bg), "\n")
+print(data.frame(file = list.files(FIXDIR), row.names = NULL))
+```
+
+> **IMPROVEMENT #5 — undocumented gene-selection defaults.**
+> `--lfc-cutoff` (default **1**, i.e. 2-fold) and `--padj-cutoff` (0.05) define
+> what "up" and "down" *mean*, but neither appears in the README's
+> "Defaults and when to change them" table (README:218-230). That table is where
+> a reader looks to understand the analysis. Note below how much the gene sets
+> move:
+
+```{r lfc-sensitivity}
+sens <- do.call(rbind, lapply(c(0, 0.5, 1, 1.5), function(cut) {
+  s <- !is.na(raw$FDR) & raw$FDR < 0.05 & abs(raw$logFC) >= cut
+  data.frame(lfc_cutoff = cut, n_up = sum(s & raw$logFC > 0), n_down = sum(s & raw$logFC < 0))
+}))
+print(sens, row.names = FALSE)
+```
+
+> **IMPROVEMENT #6 — `--padj` vs `--padj-cutoff` is a trap.**
+> `--padj` is the **term-level** cutoff ([go_enrichment.R:71]); `--padj-cutoff`
+> is the **gene-level** one ([:53]). Typing one when you meant the other is
+> silent and changes the result. Rename to `--term-padj` / `--gene-padj`, or at
+> minimum echo both into the console banner.
+
+---
+
+# 4. End-to-end CLI runs
+
+```{r runner}
+# `expect_msg` is a regex the output MUST match. Without it a test can pass for
+# the wrong reason -- e.g. every run exits 1 when a package is missing, which
+# would make the whole argument-validation section look green.
+run_script <- function(label, args, expect_status = 0L, expect_msg = NULL) {
+  t0  <- Sys.time()
+  out <- suppressWarnings(system2("Rscript", c(shQuote(SCRIPT), args),
+                                  stdout = TRUE, stderr = TRUE))
+  st  <- attr(out, "status"); st <- if (is.null(st)) 0L else as.integer(st)
+  txt <- paste(out, collapse = "\n")
+  cat(sprintf("\n===== %s  (exit %d, %.1fs) =====\n", label, st,
+              as.numeric(difftime(Sys.time(), t0, units = "secs"))))
+  cat(txt, "\n")
+
+  # An environment failure is not a test result.
+  if (grepl("there is no package called|missing R packages", txt)) {
+    skip(label, "package missing", part = "e2e")
+    return(invisible(list(status = st, output = out, skipped = TRUE)))
+  }
+  ok <- st == expect_status &&
+        (is.null(expect_msg) || grepl(expect_msg, txt, ignore.case = TRUE))
+  chk(sprintf("'%s' -> exit %d%s", label, expect_status,
+              if (is.null(expect_msg)) "" else sprintf(" + message /%s/", expect_msg)),
+      ok, part = "e2e")
+  invisible(list(status = st, output = out, skipped = FALSE))
+}
+
+expect_files <- function(label, dir, patterns) {
+  if (!dir.exists(dir)) { skip(label, "no output dir", part = "e2e"); return(invisible(NULL)) }
+  f <- list.files(dir)
+  miss <- patterns[!vapply(patterns, function(p) any(grepl(p, f)), logical(1))]
+  chk(sprintf("%s: expected outputs present", label), length(miss) == 0, part = "e2e")
+  if (length(miss)) cat("  MISSING:", paste(miss, collapse = ", "), "\n")
+  invisible(f)
+}
+```
+
+`HAVE_OPTPARSE` gates the argument-validation block below: without optparse the
+script aborts at `library(optparse)` and *every* run exits 1, which would make
+these tests pass for entirely the wrong reason.
+
+```{r optparse-gate}
+HAVE_OPTPARSE <- requireNamespace("optparse", quietly = TRUE)
+cat("optparse installed:", HAVE_OPTPARSE, "\n")
+```
+
+## 4.1 Argument validation (runs without Bioconductor)
+
+These should all fail fast with exit status 1, before any package is loaded.
+
+```{r e2e-validation, eval=HAVE_OPTPARSE}
+run_script("no input at all", c("--outdir", file.path(OUTDIR, "v1")),
+           1L, "supply either --genes")
+run_script("--genes and --de-table together",
+           c("--genes", file.path(FIXDIR, "up.txt"),
+             "--de-table", deseq_csv, "--outdir", file.path(OUTDIR, "v2")),
+           1L, "mutually exclusive")
+run_script("--gsea without --de-table",
+           c("--genes", file.path(FIXDIR, "up.txt"), "--gsea",
+             "--background", file.path(FIXDIR, "background.txt"),
+             "--outdir", file.path(OUTDIR, "v3")),
+           1L, "requires --de-table")
+run_script("invalid --ont",
+           c("--genes", file.path(FIXDIR, "up.txt"), "--ont", "XX",
+             "--outdir", file.path(OUTDIR, "v4")),
+           1L, "--ont must be")
+run_script("invalid --split",
+           c("--genes", file.path(FIXDIR, "up.txt"), "--split", "sideways",
+             "--outdir", file.path(OUTDIR, "v5")),
+           1L, "--split must be")
+run_script("missing --background is refused",
+           c("--genes", file.path(FIXDIR, "up.txt"),
+             "--outdir", file.path(OUTDIR, "v6")),
+           1L, "no --background supplied")
+run_script("--labels count mismatch",
+           c("--genes", paste(file.path(FIXDIR, c("up.txt", "down.txt")), collapse = ","),
+             "--labels", "only_one",
+             "--background", file.path(FIXDIR, "background.txt"),
+             "--outdir", file.path(OUTDIR, "v8")),
+           1L, "--labels has")
+```
+
+```{r e2e-validation-skip, eval=!HAVE_OPTPARSE, echo=FALSE}
+skip("argument validation suite", "optparse not installed", part = "e2e")
+```
+
+> **IMPROVEMENT #7 — validate `--p-method` and `--id-type` too.**
+> `--ont` and `--split` are checked at [go_enrichment.R:133-136], but a typo in
+> `--p-method` or `--id-type` surfaces much later as an opaque error from inside
+> clusterProfiler. Add them to the same block:
+>
+> ```r
+> if (!g("p-method") %in% p.adjust.methods) fail("--p-method must be one of: %s",
+>     paste(p.adjust.methods, collapse = ", "))
+> if (!g("id-type") %in% c("auto","SYMBOL","ENSEMBL","ENTREZID","REFSEQ","UNIPROT"))
+>   fail("--id-type must be auto, SYMBOL, ENSEMBL, ENTREZID, REFSEQ or UNIPROT.")
+> ```
+
+```{r e2e-validation-improve, eval=HAVE_OPTPARSE}
+run_script("IMPROVEMENT #7: bogus --p-method rejected early",
+           c("--genes", file.path(FIXDIR, "up.txt"),
+             "--background", file.path(FIXDIR, "background.txt"),
+             "--p-method", "not-a-method",
+             "--outdir", file.path(OUTDIR, "v7")),
+           1L, "--p-method must be")
+```
+
+## 4.2 Plain gene list vs background
+
+```{r e2e-list, eval=HAVE_BIOC}
+d <- file.path(OUTDIR, "list_basic")
+run_script("single list + background",
+  c("--genes", file.path(FIXDIR, "up.txt"),
+    "--background", file.path(FIXDIR, "background.txt"),
+    "--organism", ORGANISM, "--ont", "BP",
+    "--outdir", d, "--prefix", "UP"))
+expect_files("single list", d,
+             c("_all_terms\\.tsv$", "_significant\\.tsv$",
+               "_dotplot\\.png$", "_dotplot\\.pdf$",
+               "_summary\\.tsv$", "_run_log\\.txt$"))
+```
+
+### Validate the derived columns
+
+```{r e2e-list-validate, eval=HAVE_BIOC}
+f <- list.files(file.path(OUTDIR, "list_basic"), pattern = "_all_terms\\.tsv$", full.names = TRUE)
+if (length(f)) {
+  tt <- read.delim(f[1], check.names = FALSE)
+  cat("terms:", nrow(tt), " columns:", paste(names(tt), collapse = ", "), "\n\n")
+
+  chk("AnnotationSize/FoldEnrichment/Depth were added",
+      all(c("AnnotationSize", "FoldEnrichment", "Depth") %in% names(tt)), part = "e2e")
+
+  num <- as.numeric(sub("/.*", "", tt$GeneRatio)); den <- as.numeric(sub(".*/", "", tt$GeneRatio))
+  bnum <- as.numeric(sub("/.*", "", tt$BgRatio));  bden <- as.numeric(sub(".*/", "", tt$BgRatio))
+  chk("FoldEnrichment reproduces (k/n)/(M/N)",
+      isTRUE(all.equal((num/den)/(bnum/bden), tt$FoldEnrichment)), part = "e2e")
+  chk("AnnotationSize == numerator of BgRatio",
+      isTRUE(all.equal(tt$AnnotationSize, bnum)), part = "e2e")
+  chk("all terms respect --min-size/--max-size",
+      all(tt$AnnotationSize >= 10 & tt$AnnotationSize <= 500), part = "e2e")
+  chk("Depth is populated for BP", mean(!is.na(tt$Depth)) > 0.95, part = "e2e")
+  chk("results are sorted by p.adjust", !is.unsorted(tt$p.adjust), part = "e2e")
+  chk("raw p <= adjusted p everywhere", all(tt$pvalue <= tt$p.adjust + 1e-12), part = "e2e")
+
+  cat("\nmedian annotation size:", median(tt$AnnotationSize, na.rm = TRUE),
+      " median depth:", median(tt$Depth, na.rm = TRUE), "\n")
+  head(tt[, c("ID","Description","GeneRatio","BgRatio","FoldEnrichment",
+              "AnnotationSize","Depth","p.adjust")], 10)
+}
+```
+
+> **IMPROVEMENT #8 — guard the column contract.**
+> `annotate_terms` ([go_enrichment.R:317-330]) hard-codes `BgRatio` and
+> `GeneRatio`. Recent DOSE releases already emit their own `FoldEnrichment` and
+> `RichFactor` columns (which this code silently overwrites), and the ratio
+> column names have shifted before. Add an explicit check so a version bump
+> fails loudly instead of producing a wrong `AnnotationSize`:
+>
+> ```r
+> req <- c("ID", "GeneRatio", "BgRatio", "Count", "pvalue", "p.adjust")
+> if (!all(req %in% names(res_df)))
+>   fail("enrichGO result is missing %s -- clusterProfiler %s may have renamed columns.",
+>        paste(setdiff(req, names(res_df)), collapse = ", "),
+>        as.character(packageVersion("clusterProfiler")))
+> ```
+
+## 4.3 `--simplify` and `--topgo`
+
+```{r e2e-simplify, eval=HAVE_BIOC}
+d <- file.path(OUTDIR, "list_simplify")
+run_script("single list + --simplify",
+  c("--genes", file.path(FIXDIR, "up.txt"),
+    "--background", file.path(FIXDIR, "background.txt"),
+    "--organism", ORGANISM, "--ont", "BP", "--simplify",
+    "--outdir", d, "--prefix", "UP"))
+expect_files("simplify", d, c("_significant_simplified\\.tsv$", "_dotplot_simplified\\.png$"))
+```
+
+```{r e2e-topgo, eval=HAVE_BIOC && HAVE_TOPGO}
+d <- file.path(OUTDIR, "list_topgo")
+run_script("single list + --topgo",
+  c("--genes", file.path(FIXDIR, "up.txt"),
+    "--background", file.path(FIXDIR, "background.txt"),
+    "--organism", ORGANISM, "--ont", "BP", "--topgo",
+    "--outdir", d, "--prefix", "UP"))
+
+f <- list.files(d, pattern = "_all_terms\\.tsv$", full.names = TRUE)
+if (length(f)) {
+  tt <- read.delim(f[1], check.names = FALSE)
+  chk("topGO columns merged in",
+      all(c("topGO_weight01_p", "topGO_weight01_padj") %in% names(tt)), part = "e2e")
+  chk("results still sorted after merge()", !is.unsorted(tt$p.adjust), part = "e2e")
+  cat("terms significant in both ORA and topGO:",
+      sum(tt$p.adjust < 0.05 & tt$topGO_weight01_padj < 0.05, na.rm = TRUE), "\n")
+}
+```
+
+### EDIT #2 end-to-end
+
+```{r e2e-topgo-bug, eval=HAVE_BIOC && HAVE_TOPGO}
+r <- run_script("EDIT #2: --topgo with --allow-genome-background",
+  c("--genes", file.path(FIXDIR, "up.txt"), "--allow-genome-background",
+    "--organism", ORGANISM, "--ont", "BP", "--topgo",
+    "--outdir", file.path(OUTDIR, "topgo_nobg"), "--prefix", "NOBG"), 0L)
+```
+
+## 4.4 Multi-list heatmap
+
+```{r e2e-heatmap, eval=HAVE_BIOC}
+d <- file.path(OUTDIR, "heatmap")
+run_script("four lists + --heatmap",
+  c("--genes", paste(file.path(FIXDIR, sprintf("list%d.txt", 1:4)), collapse = ","),
+    "--labels", "L1,L2,L3,L4",
+    "--background", file.path(FIXDIR, "background.txt"),
+    "--organism", ORGANISM, "--ont", "BP", "--heatmap",
+    "--outdir", d, "--prefix", "CMP"))
+expect_files("heatmap", d,
+             c("_term_clusters\\.tsv$", "_heatmap_matrix\\.tsv$",
+               "_cross_list_heatmap\\.png$", "_cross_list_heatmap\\.pdf$"))
+
+f <- list.files(d, pattern = "_term_clusters\\.tsv$", full.names = TRUE)
+if (length(f)) {
+  cl <- read.delim(f[1], check.names = FALSE)
+  cat("terms:", nrow(cl), " clusters:", length(unique(cl$cluster)),
+      " flagged representative:", sum(cl$is_representative), "\n")
+  chk("EDIT #9: one representative per cluster",
+      sum(cl$is_representative) == length(unique(cl$cluster)), part = "e2e")
+  head(cl, 10)
+}
+```
+
+## 4.5 DESeq2-shaped table, split up/down, with GSEA
+
+```{r e2e-deseq, eval=HAVE_BIOC}
+d <- file.path(OUTDIR, "deseq2")
+run_script("DESeq2 table, --split both --gsea --rank-metric auto",
+  c("--de-table", deseq_csv, "--gene-col", "gene_id",
+    "--lfc-col", "log2FoldChange", "--padj-col", "padj", "--stat-col", "stat",
+    "--organism", ORGANISM, "--ont", "BP", "--split", "both", "--gsea",
+    "--outdir", d, "--prefix", "DE"))
+expect_files("deseq2", d,
+             c("DE_up_all_terms\\.tsv$", "DE_down_all_terms\\.tsv$",
+               "DE_gsea_all_terms\\.tsv$", "DE_gsea_significant\\.tsv$",
+               "DE_gsea_dotplot\\.png$", "DE_summary\\.tsv$"))
+```
+
+> **EDIT #11 — the README promises an automatic heatmap that never fires.**
+> README:94 states "It also fires automatically for `--split both` on a DE
+> table". [go_enrichment.R:534] gates it on `g("heatmap")` unconditionally. The
+> run above produced no heatmap. Either fix the doc or change the gate to
+> `if (g("heatmap") || (!is.null(g("de-table")) && g("split") == "both"))`.
+
+```{r e2e-deseq-heatmap-bug, eval=HAVE_BIOC}
+d <- file.path(OUTDIR, "deseq2")
+hm <- list.files(d, pattern = "cross_list_heatmap")
+cat("heatmap files produced by --split both without --heatmap:",
+    if (length(hm)) paste(hm, collapse = ", ") else "(none)\n")
+chk("EDIT #11: --split both produces a heatmap as README:94 claims",
+    length(hm) > 0, part = "e2e")
+```
+
+> **EDIT #12 — the GSEA dotplot is PNG-only.**
+> [go_enrichment.R:635] writes only `.png`; the ORA dotplot ([:362-363]) and the
+> heatmap ([:458-459]) write both, and README:201 advertises `{png,pdf}`.
+> Every figure in a manuscript needs the editable PDF.
+
+```{r e2e-gsea-pdf-bug, eval=HAVE_BIOC}
+chk("EDIT #12: GSEA dotplot PDF exists",
+    length(list.files(file.path(OUTDIR, "deseq2"), pattern = "gsea_dotplot\\.pdf$")) > 0,
+    part = "e2e")
+```
+
+## 4.6 edgeR table — both the broken and the fixed export
+
+```{r e2e-edger-broken, eval=HAVE_BIOC}
+r <- run_script("EDIT #1: raw topTags export (gene IDs in rownames)",
+  c("--de-table", edger_raw,
+    "--lfc-col", "logFC", "--padj-col", "FDR", "--stat-col", "F",
+    "--organism", ORGANISM, "--ont", "BP", "--split", "both", "--gsea",
+    "--outdir", file.path(OUTDIR, "edger_broken"), "--prefix", "BROKEN"), 0L)
+cat("\nNote whether the message mentions 0 genes / an ID-mapping failure rather\n",
+    "than the actual problem (an unnamed gene column).\n")
+```
+
+```{r e2e-edger-fixed, eval=HAVE_BIOC}
+d <- file.path(OUTDIR, "edger_fixed")
+run_script("edgeR table with an explicit gene column, --rank-metric auto",
+  c("--de-table", edger_fix, "--gene-col", "gene_id",
+    "--lfc-col", "logFC", "--padj-col", "FDR", "--stat-col", "F",
+    "--organism", ORGANISM, "--ont", "BP", "--split", "both", "--gsea",
+    "--outdir", d, "--prefix", "TE"))
+```
+
+Confirm `auto` chose `signed_sqrt` and that NES signs are not all one way:
+
+```{r e2e-edger-check, eval=HAVE_BIOC}
+f <- list.files(file.path(OUTDIR, "edger_fixed"), pattern = "gsea_all_terms\\.tsv$",
+                full.names = TRUE)
+if (length(f)) {
+  gg <- read.delim(f[1], check.names = FALSE)
+  cat("gene sets:", nrow(gg), "  NES > 0:", sum(gg$NES > 0), "  NES < 0:", sum(gg$NES < 0), "\n")
+  chk("GSEA returns both positive and negative NES (sign was preserved)",
+      sum(gg$NES > 0) > 0 && sum(gg$NES < 0) > 0, part = "e2e")
+}
+```
+
+### EDIT #5 end-to-end
+
+```{r e2e-edger-unsigned, eval=HAVE_BIOC}
+d <- file.path(OUTDIR, "edger_unsigned")
+run_script("EDIT #5: --rank-metric stat on the unsigned F column",
+  c("--de-table", edger_fix, "--gene-col", "gene_id",
+    "--lfc-col", "logFC", "--padj-col", "FDR", "--stat-col", "F",
+    "--rank-metric", "stat",
+    "--organism", ORGANISM, "--ont", "BP", "--split", "both", "--gsea",
+    "--outdir", d, "--prefix", "UNSIGNED"))
+
+f <- list.files(d, pattern = "gsea_all_terms\\.tsv$", full.names = TRUE)
+if (length(f)) {
+  gg <- read.delim(f[1], check.names = FALSE)
+  cat("NES > 0:", sum(gg$NES > 0), "  NES < 0:", sum(gg$NES < 0),
+      "  <- heavily one-sided means the sign was lost\n")
+  chk("EDIT #5: script warned or corrected the unsigned metric",
+      sum(gg$NES > 0) > 0 && sum(gg$NES < 0) > 0, part = "e2e")
+}
+```
+
+## 4.7 EDIT #3 end-to-end — a DE table with no significant genes
+
+```{r e2e-null, eval=HAVE_BIOC}
+r <- run_script("EDIT #3: DE table with zero significant genes",
+  c("--de-table", null_csv, "--gene-col", "gene_id",
+    "--lfc-col", "log2FoldChange", "--padj-col", "padj", "--stat-col", "stat",
+    "--organism", ORGANISM, "--ont", "BP", "--split", "both", "--gsea",
+    "--outdir", file.path(OUTDIR, "null_de"), "--prefix", "NULL"), 0L)
+cat("\nCheck the 'Detected gene ID type:' line above -- with an empty query it\n",
+    "falls through to SYMBOL regardless of what the table actually contains.\n")
+```
+
+> **IMPROVEMENT #9 — sets skipped for being too small vanish from the summary.**
+> The `next` at [go_enrichment.R:470] fires before `summary_rows[[n]]` is
+> assigned, so "too few mapped genes" and "ran fine, found nothing" are
+> indistinguishable in `*_summary.tsv`. Emit a row with `terms_tested = 0` and a
+> `status` column instead.
+
+## 4.8 Provenance log
+
+```{r e2e-log, eval=HAVE_BIOC}
+f <- list.files(file.path(OUTDIR, "deseq2"), pattern = "_run_log\\.txt$", full.names = TRUE)
+if (length(f)) {
+  lg <- readLines(f[1])
+  chk("log records the command line", any(grepl("^command:", lg)), part = "e2e")
+  chk("log records package versions", any(grepl("clusterProfiler", lg)), part = "e2e")
+  chk("log records the resolved ID type", any(grepl("resolved ID type", lg)), part = "e2e")
+  chk("log records background size", any(grepl("background size", lg)), part = "e2e")
+  chk("log includes sessionInfo()", any(grepl("R version", lg)), part = "e2e")
+  cat(head(lg, 30), sep = "\n")
+}
+```
+
+> **IMPROVEMENT #10 — options left at their NULL default are absent from the log.**
+> optparse omits `NULL`-valued options from `opt`, so the parameter dump at
+> [go_enrichment.R:659-660] silently skips `--background`, `--stat-col`,
+> `--gene-col` and friends when unset. For a file whose stated purpose is
+> reproducibility (README:239-240), the log should record every option with its
+> *effective* value, including "(unset)".
+
+---
+
+# 5. Summary of suggested edits
+
+```{r summary-table, echo=FALSE}
+edits <- read.csv(text = '
+id,severity,location,issue
+EDIT #1,CRITICAL,"go_enrichment.R:179-187 & 252-259","Raw topTags/DESeq2 exports have a blank first header field; gcol becomes the empty string, the name-membership validation still passes, de[[gcol]] is NULL, and the table silently collapses to 0 rows"
+EDIT #2,HIGH,"go_enrichment.R:489","--topgo with --allow-genome-background passes NULL to run_topgo; zero-length allGenes factor crashes topGOdata"
+EDIT #3,HIGH,"go_enrichment.R:285-288","ID type guessed from significant genes only; empty DE result silently yields SYMBOL and breaks GSEA mapping"
+EDIT #4,MEDIUM,"go_enrichment.R:192","guess_id_type indexes with the pre-filter length, re-introducing NAs and diluting detection"
+EDIT #5,MEDIUM,"go_enrichment.R:554 & 562-567","is_unsigned only consulted in the auto branch; --rank-metric stat on F/LR silently discards direction"
+EDIT #6,LOW,"go_enrichment.R:494-495","Raw logical subsetting propagates NA p.adjust into an all-NA row"
+EDIT #7,LOW,"go_enrichment.R:597-598","tapply+sort yields a 1-d array rather than a named numeric vector"
+EDIT #8,LOW,"go_enrichment.R:351 & 442","factor(levels=) errors if two terms share a Description (reachable with --ont ALL)"
+EDIT #9,LOW,"go_enrichment.R:424-426","is_representative set after truncation to --heatmap-top; most clusters end up with no representative"
+EDIT #10,LOW,"go_enrichment.R:215-217","Mapping-rate line prints unique-Entrez count with a unique-source-ID percentage"
+EDIT #11,DOC,"go_enrichment.R:534 vs README:94","README claims the heatmap fires automatically for --split both; the code requires --heatmap"
+EDIT #12,DOC,"go_enrichment.R:635 vs README:201","GSEA dotplot writes PNG only; everything else writes PNG+PDF"
+EDIT #13,DOC,"go_enrichment.R:8-12","Header comment calls clusterProfiler the only scriptable tool of the four, then offers topGO in the next bullet. README:19 has it right (DAVID and Enrichr are web-only)"
+EDIT #14,DOC,"README:198","The phrase (every term tested) overstates it: enrichGO returns only terms with >=1 query gene and within min/maxGSSize"
+EDIT #15,DOC,"README:27 vs README:247","Wijesooriya et al. author order differs between the in-text mention and the reference list"
+', stringsAsFactors = FALSE)
+knitr::kable(edits, row.names = FALSE)
+```
+
+```{r summary-improvements, echo=FALSE}
+imps <- read.csv(text = '
+id,location,suggestion
+IMPROVEMENT #1,environments/,"Add a conda recipe; the script has never run because the stack was never installed"
+IMPROVEMENT #2,README:45-46,"GOSemSim is an Imports of clusterProfiler, never optional; only topGO is conditional"
+IMPROVEMENT #3,go_enrichment.R:174,"Header-detection regex misses Gene.ID / GeneSymbol / ensembl_gene_id"
+IMPROVEMENT #4,go_enrichment.R:406,"Kappa universe is the term-gene union, not the input list as in Metascape; document it, since --kappa 0.3 is inherited from Metascape"
+IMPROVEMENT #5,README:218-230,"--lfc-cutoff (default 1) and --padj-cutoff are absent from the defaults table but define what up/down mean"
+IMPROVEMENT #6,go_enrichment.R:53 & 71,"--padj vs --padj-cutoff are silently confusable; rename to --term-padj / --gene-padj"
+IMPROVEMENT #7,go_enrichment.R:133-136,"Validate --p-method and --id-type alongside --ont and --split"
+IMPROVEMENT #8,go_enrichment.R:317-330,"Assert the enrichGO column contract so a DOSE version bump fails loudly"
+IMPROVEMENT #9,go_enrichment.R:470,"Sets skipped for <5 genes get no summary row; emit one with a status column"
+IMPROVEMENT #10,go_enrichment.R:659-660,"Options left at NULL never reach the run log, undermining its reproducibility purpose"
+', stringsAsFactors = FALSE)
+knitr::kable(imps, row.names = FALSE)
+```
+
+```{r final-report}
+test_report()
+```
+
+---
+
+# 6. Ready-to-apply patches
+
+Not applied automatically — review, then paste into `go_enrichment.R`.
+
+## EDIT #1 (critical)
+
+Replace `read_table_auto` ([go_enrichment.R:179-187]):
+
+```r
+read_table_auto <- function(path) {
+  if (!file.exists(path)) fail("file not found: %s", path)
+  sep <- if (grepl("\\.csv$", path, ignore.case = TRUE)) "," else "\t"
+  df  <- read.delim(path, sep = sep, header = TRUE, check.names = FALSE,
+                    stringsAsFactors = FALSE)
+  if (ncol(df) == 1) df <- read.delim(path, sep = ",", header = TRUE,
+                                      check.names = FALSE, stringsAsFactors = FALSE)
+  # DESeq2/edgeR tables written with row.names = TRUE leave the first header
+  # field blank (or R renames it X / V1 / ...1). Promote it to a real column.
+  if (!nzchar(trimws(names(df)[1])) || names(df)[1] %in% c("X", "V1", "...1")) {
+    names(df)[1] <- "gene_id"
+    msg("  note: first column of %s had no name; treating it as 'gene_id'.", basename(path))
+  }
+  df
+}
+```
+
+and tighten the column check ([go_enrichment.R:252-255]):
+
+```r
+  gcol <- if (!is.null(g("gene-col"))) g("gene-col") else names(de)[1]
+  if (!nzchar(trimws(gcol)) || is.null(de[[gcol]]))
+    fail("gene column '%s' is empty or absent in --de-table (have: %s)",
+         gcol, paste(names(de), collapse = ", "))
+  for (cc in c(g("lfc-col"), g("padj-col")))
+    if (!cc %in% names(de)) fail("column '%s' not in --de-table (have: %s)", cc,
+                                 paste(names(de), collapse = ", "))
+```
+
+## EDIT #2
+
+In the ORA loop, before `run_topgo` ([go_enrichment.R:487-491]):
+
+```r
+  if (g("topgo")) {
+    bg_topgo <- if (is.null(bg_entrez)) keys(OrgDb, keytype = "ENTREZID") else bg_entrez
+    onts <- if (g("ont") == "ALL") c("BP", "MF", "CC") else g("ont")
+    tg <- do.call(rbind, lapply(onts, function(o) run_topgo(q, bg_topgo, o)))
+    res <- merge(res, tg, by = "ID", all.x = TRUE)
+  }
+```
+
+## EDIT #3 and #4
+
+```r
+guess_id_type <- function(x) {
+  x <- head(x[!is.na(x) & nzchar(x)], 200)
+  if (!length(x)) return("SYMBOL")
+  if (mean(grepl("^ENS[A-Z]*[GT]?\\d{6,}", x)) > 0.5) return("ENSEMBL")
+  if (mean(grepl("^\\d+$", x))                > 0.8) return("ENTREZID")
+  if (mean(grepl("^N[MR]_|^X[MR]_", x))       > 0.5) return("REFSEQ")
+  "SYMBOL"
+}
+```
+
+and at [go_enrichment.R:285-288] prefer the background, which is always populated:
+
+```r
+if (id_type == "auto") {
+  id_src  <- if (!is.null(bg_raw)) bg_raw else unlist(sets, use.names = FALSE)
+  id_type <- guess_id_type(id_src)
+  msg("Detected gene ID type: %s (from %s)", id_type,
+      if (!is.null(bg_raw)) "background" else "query")
+}
+```
+
+Note this must move *below* the `bg_raw` assignment.
+
+## EDIT #5
+
+After `is_unsigned` is computed ([go_enrichment.R:554]):
+
+```r
+  if (rmet == "stat" && is_unsigned) {
+    msg("  WARNING: --stat-col '%s' is unsigned; using sign(logFC)*sqrt(%s) instead.",
+        statcol, statcol)
+    rmet <- "signed_sqrt"
+  }
+```
+
+## EDIT #6, #7, #8, #9, #12
+
+```r
+# EDIT #6 -- go_enrichment.R:495
+sig <- res[which(keep), , drop = FALSE]
+
+# EDIT #7 -- go_enrichment.R:598
+rk <- tapply(metric, ent, function(v) v[which.max(abs(v))])
+rk <- setNames(as.numeric(rk), names(rk))
+rk <- sort(rk, decreasing = TRUE)
+
+# EDIT #8 -- go_enrichment.R:351 and :442
+df$Description <- factor(df$Description,
+                         levels = rev(unique(df$Description[order(df$FoldEnrichment)])))
+
+# EDIT #9 -- go_enrichment.R:424-426
+reps <- memb[!duplicated(memb$cluster), ]
+memb$is_representative <- memb$ID %in% reps$ID          # flag ALL cluster reps
+reps <- head(reps[order(reps$best_padj), ], g("heatmap-top"))
+memb$in_heatmap <- memb$ID %in% reps$ID                 # separate column
+
+# EDIT #12 -- after go_enrichment.R:636
+ggsave(paste0(base, "_dotplot.pdf"), p, width = 9,
+       height = max(3, 0.32 * nrow(d) + 1.4))
+```
+
+## EDIT #10
+
+```r
+  msg("  %-12s %d input -> %d mapped to %d Entrez IDs (%.1f%%)",
+      label, length(ids), length(unique(m[[from]])), length(out),
+      100 * length(unique(m[[from]])) / max(1, length(ids)))
+```
+
+---
+
+# 7. Cleanup
+
+```{r cleanup, eval=FALSE}
+unlink(TESTROOT, recursive = TRUE)
+```

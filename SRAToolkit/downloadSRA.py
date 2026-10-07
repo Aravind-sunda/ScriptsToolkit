@@ -139,9 +139,21 @@ def main():
 
     # Run prefetch from within sra_dir (same behavior as your bash script)
     # check if the output of the SRA is present, if present remove that particular SRA file and run prefetch again fr the rest of the files
-    run_cmd(f"prefetch --option-file {shlex.quote(acc_only_path)} --max-size u", cwd=sra_dir, module="sratoolkit/3.2.0")
-
+    # run_cmd(f"prefetch --option-file {shlex.quote(acc_only_path)} --max-size u", cwd=sra_dir, module="sratoolkit/3.2.0")
+    
+    
+    # NOTE: a single --option-file call breaks on aligned (cSRA) runs: after prefetch walks the
+    # refseq dependency tree of one accession, the next one fails to resolve with
+    # "path not found while resolving tree - cannot get cache location" and prefetch exits 3
+    # (sratoolkit 3.2.0 resolver bug). Prefetch one accession per invocation instead.
+    for a in accs:
+        run_cmd(f"prefetch {shlex.quote(a)} --max-size u", cwd=sra_dir, module="sratoolkit/3.2.0")
+    
+    
     # os.remove(acc_only_path)
+
+
+
 
     # 2) fasterq-dump each accession; auto-detect SE/PE by output files created
     for r in rows:
