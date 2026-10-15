@@ -1,0 +1,173 @@
+# this is MSbio configuration file
+# the format is not the standard JSON, because allows comments by "#"
+# all entries are optional
+
+{
+    "enrichment": {
+
+        # the following are options exposed in the Custom Analysis of via Metascape web interface
+
+        "l_GO": true,   # true/false to turn on/off GO analysis
+        "l_GPEC": false, # GPEC analysis settings
+        "min_overlap": 3,
+        "min_enrichment": 1.5,
+        "p_cutoff": 0.01,
+        "l_go_selective": "common", # default ("common" or false), can also take ("selective" or true)
+
+        ### GO Categories
+        # term_category_id    category_name
+        # 3   Immunologic Signatures
+        # 4   Oncogenic Signatures
+        # 6   Reactome Gene Sets
+        # 11  Canonical Pathways
+        # 13  Chemical And Genetic Perturbations
+        # 15  BioCarta Gene Sets
+        # 19  GO Biological Processes
+        # 20  GO Cellular Components
+        # 21  GO Molecular Functions
+        # 23  Hallmark Gene Sets
+        # 24  KEGG Pathway (only available for non-commercial)
+        # 27  WikiPathways
+        # 28  PANTHER Pathway
+        # 33  CORUM
+
+        "S_go_category": [19,21],
+
+        ### QC Categories
+        # term_category_id    category_name
+        # 16  Transcription Factor Targets
+        # 34  TRRUST
+        # 35  DisGeNET
+        # 36  PaGenBase
+        # 91  L1000 shRNA
+        # 92  L1000 Compound
+        # 93  L1000 cDNA
+        # 94  L1000 Ligand
+        # 200 COVID
+        
+        "l_QC": true,   # true/false to trun on/off QC analysis
+        "S_qc_category": [34,35,36,200,7],
+
+        "l_PPI": true,  # true/false to turn on/off PPI analysis
+        "min_ppi_size": 3,
+        "max_ppi_size": 500,
+        "ppi_datasource": "PHYSICAL_CORE", # one of "PHYSICAL_CORE","PHYSICAL_ALL","COMBINED_CORE","COMBINED_ALL"
+
+
+        # the following are limits imposed by Metascape the web interface
+
+        # Control GO Analysis
+        "min_list_size_for_go": 3,
+        "max_list_size_for_go": 3000,   # do not analyze gene list with >3000 genes
+        "max_clusters": 20,
+        "max_clusters_summary":100, # use to summary more clusters, in case interesting clusters are deeper
+
+        # PPI analysis settings
+        "min_ppi_size": 3,
+        "max_ppi_size": 500,
+        "max_list_size_for_ppi": 3000,
+        "max_ppi_size_for_plot": 500, # donnot plot network if it is too complicated
+
+        # the following are additional settings you should not touch
+
+        # GO Analysis
+        "max_nof_enriched_go": 2000,
+        # color for each gene list, a list that matches the size of the gene lists
+        "S_color": null,
+        "max_clusters": 20,
+        "max_clusters_summary":100, # use to summary more clusters, in case interesting clusters are deeper
+        # use to summary more clusters, incase interesting clusters are deeper
+        "cluster_qc_terms": false,
+        "max_member_per_go_cluster": 10,
+        "l_GO_summary": true,
+        "cluster_similarity": 0.3,
+        "max_nodes_in_go_network": 200,
+        # circos
+        "circos_link_logp": -3,
+        "circos_link_go_size": 100,
+        "circos_link_enrichment": 2.0,
+        "circos_show_symbol": false,
+        "circos_max_go_terms": 250, # sample no more than this amount for edge display, prevent too many edges
+        # heatmap
+        "skip_cluster_column": false,
+        # PPI analysis settings
+        "l_merge_for_ppi": true,
+        "l_connect_in_merge": false, # MCODE, connect interactions cross MCODE clusters
+        "l_exclude_mcode_evidence": true,
+        # GPEC analysis settings
+        "min_evi_term_size": 3,
+        "max_evi_term_size": 100,
+        "logp_evi_term": -2.0,
+        "min_benchmark_for_ML": 10, # at least 10 known genes to start machine learning the evidence weights
+        "l_BYPASS_ML": false, # force to skip ML, even if there are enough benchmark genes
+        "max_lists_ML_individual": 5,   # if <=5, we regress weights for individual evidence lines (15 total), if more lists
+                                        # we first combine evidence lines into E_hit, E_go, E_ppi, then regress these 3
+        "max_GPEC_iteration": 10, # max iteration for RSA-GO
+        "gpec_ppi_target_size": 250,
+        "max_go_annotation_per_mcode": 3
+    },
+
+    "annotation": {
+
+        ### annotation_type_id  display_name
+        # 1   Synonyms
+        # 3   Type of Gene
+        # 4   Description
+        # 5   Biological Process (GO)
+        # 6   Cellular Component (GO)
+        # 7   Molecular Function (GO)
+        # 8   JAX
+        # 9   OMIM
+        # 10  Pubmed Count
+        # 11  Gene Summary
+        # 12  Tissue Specificity (TiGER)
+        # 13  Drug (DrugBank)
+        # 14  Pathogenic LoF (ClinVar)
+        # 23  KEGG Pathway
+        # 25  KEGG Functional Set
+        # 26  KEGG Structural Complex
+        # 27  Hallmark Gene Sets
+        # 28  Canonical Pathways
+        # 29  BioCarta Gene Sets
+        # 30  Gene Symbol
+        # 33  Secreted (UniProt)
+        # 34  Transmembrane (UniProt)
+        # 35  Kinase Class (UniProt)
+        # 37  Protein Function (Protein Atlas)
+        # 38  Membrane (Protein Altas)
+        # 40  Secreted (Protein Altas)
+        # 41  Plasma (Protein Altas)
+        # 42  Subcellular Location (Protein Atlas)
+        # 46  dbGap (NCBI)
+        # 47  GWAS (NHGRI-EBI)
+        # 48  Protein Expression Normal (Protein Atlas)
+        # 49  Protein Expression Cancer (Protein Atlas)
+        # 50  RNA Tissue Category (Protein Atlas)
+        # 52  Gene Location
+        # 53  Developmental Disorders (DDG2P)
+        # 54  GOSlim (Phenotype)
+        # 56  Orphanet
+        # 57  GOSlim (Ontology)
+        # 60  InterPro
+        # 61  Ensembl Protein Family
+        # 62  Transmembrane (TMHMM)
+        # 67  Variations (Ensembl)
+        # 68  Isoforms ID Map
+        # 69  Gene RIF (NCBI)
+        # 70  Appris (Ensembl)
+        # 71  Human Phenotype Ontology (HPO)
+        # 72  Disease and gene associations (DisGeNET)
+        # 74  ChatGPT_Function
+        # 75  ChatGPT_Disease
+        # 86  Disease Ontology (DO)
+
+        "S_ann_id":[30, 4, 5, 35, 37, 42, 13, 28, 27, 74, 75 ],
+        "extend_human": true
+    },
+
+    "membership": {
+        # the format is a dictionary, a "search keyword":[ list of term IDs ]
+        # e.g. "invasion":["19_GO:0031627","24_ko05146"]
+        "membership_grps":{}
+    }
+}
