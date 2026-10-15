@@ -9,6 +9,25 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r}
+# venndiagram
+x <- list(Knockdown_AC_ACLY = deseq_AC_vs_NC_sig_up,
+          Normal_NC_ACLY = deseq_AC_vs_NC_sig_down,
+          ACLY_CLIP_genes = ACLY_IP1_IP2_genes
+          )
+plot <- ggVennDiagram::ggVennDiagram(x,force_upset = T)
+plot
+
+region_info <- process_region_data(Venn(x))
+
+region_gene_lists <- region_info %>%
+  filter(count > 0) %>%
+  mutate(name = str_replace_all(name, "/", "_AND_")) %>%
+  { setNames(.$item, .$name) }
+# region gene lists can be fed into the metascape gene function
+
+```
+
 # Metascape Gene List Function
 This writes a text file that can be read in metascape to generate gene list analyses.
 
@@ -36,8 +55,8 @@ write_multi_gene_list <- function(gene_lists, file) {
 # each has to be a named vector list that can be passed to the write_multi_gene_list function
 # minimum is 2 lists; add more entries in the same format as needed
 gene_lists <- list(
-  <listname_1> = <vector_1>,
-  <listname_2> = <vector_2>
+  # <listname_1> = <vector_1>,
+  # <listname_2> = <vector_2>
 )
 
 write_multi_gene_list(gene_lists, "<output_dir>/<output_name>.txt")
@@ -52,8 +71,67 @@ library(plotgardener)
 library(gviz) # https://bioconductor.org/packages/release/bioc/html/Gviz.html
 library(trackplot) # https://github.com/PoisonAlien/
 library(millefy)# https://link.springer.com/article/10.1186/s12864-020-6542-z # comparing single cell and bulk data. Have to check if there are better options
-
-
 ```
 
+```{r}
+# Function to clean up featureCounts matrix with both gene id and gene name column
+process_feature_counts <- function(file_path) {
+  # Read matrix, skipping the first comment line
+  fc <- read.table(file_path, sep="\t", header=TRUE, comment.char="#", 
+                   check.names=FALSE, stringsAsFactors=FALSE)
+  
+  # Identify sample columns (BAM files typically start at column 8 in this setup)
+  col_names <- colnames(fc)
+  bam_cols <- 8:length(col_names)
+  
+  # Clean sample column names: split by '/', take last; split by '.', take first 2
+  cleaned_names <- sapply(col_names[bam_cols], function(x) {
+    base_name <- tail(strsplit(x, "/")[[1]], 1)
+    parts <- strsplit(base_name, "\\.")[[1]]
+    paste(parts[1:min(2, length(parts))], collapse=".")
+  })
+  colnames(fc)[bam_cols] <- cleaned_names
+  
+  # Identify columns where all values are 0
+  is_zero <- sapply(fc[, bam_cols, drop=FALSE], function(x) all(x == 0))
+  cols_to_drop <- names(is_zero)[is_zero]
+  
+  # Drop zero-columns and print them
+  if (length(cols_to_drop) > 0) {
+    cat("Samples Dropped (due to no reads):", paste(cols_to_drop, collapse=", "), "\n")
+    fc <- fc[, !(colnames(fc) %in% cols_to_drop)]
+  } else {
+    cat("Samples Dropped (due to no reads): None\n")
+  }
+  
+  # Drop the spatial coordinates (keeping Geneid and gene_name)
+  cols_to_remove <- c("Chr", "Start", "End", "Strand", "Length")
+  fc <- fc[, !(colnames(fc) %in% cols_to_remove)]
+  
+  return(fc)
+}
+
+# --- Subtraction Logic ---
+
+# 1. Process both files
+exon_df <- process_feature_counts("featureCounts_trimmed.exon.counts.txt")
+gene_df <- process_feature_counts("featureCounts_trimmed.gene.counts.txt")
+
+# 2. Sort both dataframes by Geneid to ensure rows align perfectly
+exon_df <- exon_df[order(exon_df$Geneid), ]
+gene_df <- gene_df[order(gene_df$Geneid), ]
+
+# 3. Create the final intronic dataframe retaining ID columns
+intron_df <- gene_df[, c("Geneid", "gene_name")]
+
+# 4. Identify the intersecting sample columns
+samples <- intersect(colnames(gene_df)[-(1:2)], colnames(exon_df)[-(1:2)])
+
+# 5. Subtract exon counts from gene counts
+intron_df[samples] <- gene_df[samples] - exon_df[samples]
+
+# 6. Floor any negative values to 0 (caused by rare read summarization overlaps)
+intron_df[samples][intron_df[samples] < 0] <- 0
+
+```
 
